@@ -19,11 +19,35 @@ export default function RentalList({ refreshTrigger }) {
     fetchRentals();
   }, [refreshTrigger]);
 
+  const downloadReport = () => {
+    const token = localStorage.getItem('token');
+    const a = document.createElement('a');
+    a.href = `${import.meta.env.VITE_API_URL || 'http://localhost:3001'}/api/rentals/mine/report`;
+    // Fetch as blob so we can attach the auth header
+    fetch(a.href, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.blob())
+      .then((blob) => {
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = 'rental-report.pdf';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+  };
+
   if (loading) return <div className="text-white p-4">Loading rentals...</div>;
 
   return (
     <div className="bg-cat-surface border border-cat-border p-6 rounded-lg shadow-lg">
-      <h2 className="text-2xl font-bold text-cat-yellow mb-4">My Active Rentals</h2>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-2xl font-bold text-cat-yellow">My Active Rentals</h2>
+        <button
+          onClick={downloadReport}
+          className="bg-cat-yellow text-cat-black font-bold px-4 py-2 rounded hover:bg-yellow-500 transition text-sm"
+        >
+          Download Report
+        </button>
+      </div>
       {rentals.length === 0 ? (
         <p className="text-gray-400">No active rentals.</p>
       ) : (

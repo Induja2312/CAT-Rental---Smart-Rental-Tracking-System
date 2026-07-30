@@ -4,7 +4,6 @@ import pickle, os, numpy as np
 
 app = FastAPI()
 
-# Lazy-load model so /health works even before train.py has been run
 _bundle = None
 
 def get_model():
@@ -29,6 +28,23 @@ class PredictRequest(BaseModel):
     idleHoursToday: float
     days_since_op_assigned: float = 0.0
 
+# Training distribution means (from seed baselines) used to identify the
+# most-deviated feature and label the anomaly type — no separate model needed.
+FEATURE_MEANS = {
+    "engineHoursToday":       5.0,
+    "idleHoursToday":         2.1,
+    "idle_engine_ratio":      0.35,
+    "days_since_op_assigned": 1.0,
+}
+
+def classify_anomaly_type(engine, idle, idle_ratio, days_op):
+    deviations = {
+        "irregular_usage_pattern":  abs(engine      - FEATURE_MEANS["engineHoursToday"])       / max(FEATURE_MEANS["engineHoursToday"], 0.1),
+        "abnormal_idle_ratio":      abs(idle_ratio   - FEATURE_MEANS["idle_engine_ratio"])      / max(FEATURE_MEANS["idle_engine_ratio"], 0.01),
+        "unusual_operator_gap":     abs(days_op      - FEATURE_MEANS["days_since_op_assigned"]) / max(FEATURE_MEANS["days_since_op_assigned"], 0.1),
+    }
+    return max(deviations, key=deviations.get)
+
 
 @app.post("/predict")
 def predict(req: PredictRequest):
@@ -46,11 +62,25 @@ def predict(req: PredictRequest):
         req.days_since_op_assigned,
     ]])
 
-    prediction    = model.predict(row)[0]        # 1 = normal, -1 = anomaly
-    anomaly_score = float(-model.score_samples(row)[0])  # higher = more anomalous
+    prediction    = model.predict(row)[0]
+    anomaly_score = float(-model.score_samples(row)[0])
+    is_anomaly    = bool(prediction == -1)
+
+    anomaly_type = None
+    confidence   = round(min(anomaly_score / 0.3, 1.0), 4)  # normalise to [0,1]
+
+    if is_anomaly:
+        anomaly_type = classify_anomaly_type(
+            req.engineHoursToday,
+            req.idleHoursToday,
+            idle_engine_ratio,
+            req.days_since_op_assigned,
+        )
 
     return {
         "equipmentId":   req.equipmentId,
-        "is_anomaly":    bool(prediction == -1),
+        "is_anomaly":    is_anomaly,
         "anomaly_score": round(anomaly_score, 4),
+        "anomaly_type":  anomaly_type,
+        "confidence":    confidence,
     }

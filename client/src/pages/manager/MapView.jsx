@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import L from 'leaflet';
 import socket, { TELEMETRY_UPDATE, EQUIPMENT_STATUS } from '../../sockets/socket';
 import { Navigation, MapPin, Fuel, ShieldAlert } from 'lucide-react';
@@ -129,6 +130,7 @@ export default function MapView({
   onSelectMachine = null,
   onInitiateTransfer = null,
 }) {
+  const navigate = useNavigate();
   const mapContainerRef = useRef(null);
   const mapRef = useRef(null);
   const markersRef = useRef([]);
@@ -291,6 +293,7 @@ export default function MapView({
 
         marker.on('click', () => {
           if (onSelectMachine) onSelectMachine(eq);
+          navigate(`/manager/equipment/${eq.equipmentId}`);
         });
 
         const statusBadge =

@@ -3,6 +3,7 @@ const Equipment = require('../models/Equipment');
 const Telemetry = require('../models/Telemetry');
 const { getIO, TELEMETRY_UPDATE, EQUIPMENT_STATUS } = require('../sockets');
 const { checkAndAlert } = require('../services/alertEngine');
+const { computeForecast } = require('../services/forecastService');
 
 // Derive equipment status from telemetry values
 const deriveStatus = (engineHours, fuelLevel) => {
@@ -64,6 +65,17 @@ router.post('/ingest', async (req, res) => {
       .catch(err => console.error('alertEngine error:', err.message));
 
     res.status(201).json({ id: record._id });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/telemetry/forecast — per-site moving-average trend (heuristic, not ML)
+router.get('/forecast', async (req, res) => {
+  try {
+    const windowDays = Math.min(parseInt(req.query.window) || 3, 14);
+    const forecasts = await computeForecast(windowDays);
+    res.json({ windowDays, forecasts });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

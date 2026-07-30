@@ -44,7 +44,7 @@ const pollOnce = async () => {
       await raiseAlert(
         record.equipmentId,
         'ml_anomaly',
-        `${equipment.equipmentId} flagged as anomaly by ML model (score: ${data.anomaly_score})`,
+        `${equipment.equipmentId} — ${(data.anomaly_type || 'irregular_usage_pattern').replace(/_/g, ' ')} detected (confidence: ${Math.round((data.confidence ?? data.anomaly_score) * 100)}%)`,
         data.anomaly_score > 0.15 ? 'high' : 'medium',
       );
     }

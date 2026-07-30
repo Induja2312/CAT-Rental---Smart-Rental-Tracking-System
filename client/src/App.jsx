@@ -2,11 +2,10 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
-
+import EquipmentDetail from './pages/manager/EquipmentDetail';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
-
-// Placeholder pages — teammates replace these with real pages
 
 export default function App() {
   return (
@@ -16,14 +15,17 @@ export default function App() {
           <Route path="/login" element={<Login />} />
 
           <Route path="/admin" element={
-            <ProtectedRoute role="admin"><ManagerDashboard /></ProtectedRoute>
+            <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
           } />
           <Route path="/admin/*" element={
-            <ProtectedRoute role="admin"><ManagerDashboard /></ProtectedRoute>
+            <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
           } />
 
           <Route path="/manager" element={
             <ProtectedRoute role="manager"><ManagerDashboard /></ProtectedRoute>
+          } />
+          <Route path="/manager/equipment/:equipmentId" element={
+            <ProtectedRoute role="manager"><EquipmentDetail /></ProtectedRoute>
           } />
           <Route path="/manager/*" element={
             <ProtectedRoute role="manager"><ManagerDashboard /></ProtectedRoute>

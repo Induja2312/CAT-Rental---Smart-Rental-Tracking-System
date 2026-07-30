@@ -9,6 +9,7 @@ import {
   Calculator,
   Award,
   MapPin,
+  TrendingUp,
 } from 'lucide-react';
 
 export default function AllocationPanel({
@@ -25,6 +26,11 @@ export default function AllocationPanel({
   const [selectedRec, setSelectedRec] = useState(null);
   const [transferSuccess, setTransferSuccess] = useState('');
   const [transferringId, setTransferringId] = useState(null);
+  const [forecast, setForecast] = useState([]);
+
+  useEffect(() => {
+    axios.get('/api/telemetry/forecast').then((r) => setForecast(r.data.forecasts || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (sites.length > 0 && !targetSiteId) {
@@ -99,6 +105,32 @@ export default function AllocationPanel({
 
   return (
     <div className="space-y-6">
+      {/* Demand Forecast Panel */}
+      {forecast.length > 0 && (
+        <div className="bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-3">
+          <div className="flex items-center gap-3 border-b border-zinc-200 pb-3">
+            <div className="p-2 bg-[#FFC500] text-black rounded-md shadow-sm">
+              <TrendingUp className="w-5 h-5 stroke-[2.5]" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-wide">Site Demand Forecast</h4>
+              <p className="text-xs text-zinc-500 font-medium">Moving-average trend over last 3 days — heuristic, not ML</p>
+            </div>
+          </div>
+          {forecast.map((f) => (
+            <div key={f.siteId} className={`p-3 rounded-md border text-xs font-mono ${
+              f.trend === 'rising'  ? 'bg-[#ECFDF5] border-[#A7F3D0] text-[#047857]' :
+              f.trend === 'falling' ? 'bg-[#FEF2F2] border-[#FCA5A5] text-[#B91C1C]' :
+                                      'bg-zinc-50 border-zinc-200 text-zinc-700'
+            }`}>
+              <span className="font-black">{f.siteName}</span>
+              {' — '}{f.recommendation}
+              <span className="ml-2 text-[10px] opacity-70">({f.changePct > 0 ? '+' : ''}{f.changePct}%)</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Scoring Formula & Control Bar Container */}
       <div className="bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-4">
