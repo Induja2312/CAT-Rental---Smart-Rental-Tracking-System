@@ -12,21 +12,37 @@ const seed = async () => {
 
   await Promise.all([User.deleteMany(), Site.deleteMany(), Equipment.deleteMany(), Rental.deleteMany()]);
 
+  // Tamil Nadu Sites
   const sites = await Site.insertMany([
-    { name: 'Site Alpha',   location: { lat: 37.7749, lng: -122.4194 } },
-    { name: 'Site Beta',    location: { lat: 34.0522, lng: -118.2437 } },
-    { name: 'Site Gamma',   location: { lat: 41.8781, lng: -87.6298  } },
+    { name: 'Chennai Port Hub (S001)',   location: { lat: 13.0827, lng: 80.2707 } },
+    { name: 'Coimbatore Mining (S002)', location: { lat: 11.0168, lng: 76.9558 } },
+    { name: 'Madurai Infra (S003)',    location: { lat: 9.9252,  lng: 78.1198 } },
+    { name: 'Trichy Industrial (S004)', location: { lat: 10.7905, lng: 78.7047 } },
+    { name: 'Salem Steel Zone (S006)',  location: { lat: 11.6643, lng: 78.1460 } },
   ]);
 
   const passwordHash = await bcrypt.hash('admin123', 10);
   await User.create({
-    name: 'Admin User',
+    name: 'Tamil Nadu Fleet Operations Manager',
     email: 'admin@catrental.com',
     passwordHash,
     role: 'admin',
-    assignedSites: sites.map(s => s._id),
+    assignedSites: sites.map((s) => s._id),
   });
 
+  // Machine Dataset mapped to Tamil Nadu locations (matched with problem sheet EQX1001 - EQX1007)
+  await Equipment.insertMany([
+    { equipmentId: 'EQX1001', type: 'Excavator',  siteId: sites[2]._id, status: 'active',     currentLocation: { lat: 9.9280,  lng: 78.1220 } },
+    { equipmentId: 'EQX1002', type: 'Crane',      siteId: null,         status: 'idle',       currentLocation: { lat: 13.0850, lng: 80.2730 } },
+    { equipmentId: 'EQX1003', type: 'Bulldozer',  siteId: sites[1]._id, status: 'active',     currentLocation: { lat: 11.0190, lng: 76.9580 } },
+    { equipmentId: 'EQX1004', type: 'Excavator',  siteId: sites[3]._id, status: 'overdue',    currentLocation: { lat: 10.7930, lng: 78.7070 } },
+    { equipmentId: 'EQX1005', type: 'Bulldozer',  siteId: sites[4]._id, status: 'active',     currentLocation: { lat: 11.6670, lng: 78.1490 } },
+    { equipmentId: 'EQX1006', type: 'Grader',     siteId: sites[0]._id, status: 'idle',       currentLocation: { lat: 13.0800, lng: 80.2680 } },
+    { equipmentId: 'EQX1007', type: 'Excavator',  siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7900, lng: 78.7000 } },
+  ]);
+
+  console.log('Seed complete: 1 Manager/Admin, 5 Tamil Nadu sites, 7 Equipment items');
+  console.log('Login: admin@catrental.com / admin123');
   const customerHash = await bcrypt.hash('customer123', 10);
   const customer = await User.create({
     name: 'Test Customer',
@@ -69,4 +85,7 @@ const seed = async () => {
   await mongoose.disconnect();
 };
 
-seed().catch(err => { console.error(err); process.exit(1); });
+seed().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});

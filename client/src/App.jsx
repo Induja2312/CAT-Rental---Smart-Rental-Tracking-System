@@ -2,11 +2,13 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
+import ManagerDashboard from './pages/manager/ManagerDashboard';
 
 import CustomerDashboard from './pages/customer/CustomerDashboard';
 
 // Placeholder pages — teammates replace these with real pages
 const AdminDashboard    = () => <div className="p-8">Admin Dashboard — Person A builds here</div>;
+const CustomerDashboard = () => <div className="p-8">Customer Dashboard — Person C builds here</div>;
 const ManagerDashboard  = () => <div className="p-8">Manager Dashboard — Person B builds here</div>;
 
 export default function App() {
@@ -16,14 +18,23 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
 
+          <Route path="/admin" element={
+            <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
+          } />
           <Route path="/admin/*" element={
             <ProtectedRoute role="admin"><AdminDashboard /></ProtectedRoute>
           } />
 
+          <Route path="/manager" element={
+            <ProtectedRoute role="manager"><ManagerDashboard /></ProtectedRoute>
+          } />
           <Route path="/manager/*" element={
             <ProtectedRoute role="manager"><ManagerDashboard /></ProtectedRoute>
           } />
 
+          <Route path="/customer" element={
+            <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
+          } />
           <Route path="/customer/*" element={
             <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
           } />
