@@ -9,8 +9,22 @@ router.get('/', requireAuth, async (req, res) => {
   try {
     const filter = {};
     if (req.query.resolved !== undefined) filter.resolved = req.query.resolved === 'true';
+    
+    let allowedSiteIds = [];
+    if (req.user.role === 'manager') {
+      allowedSiteIds = req.user.assignedSites || [];
+    }
+
     if (req.query.siteId && req.query.siteId !== 'all') {
-      const equipment = await Equipment.find({ siteId: req.query.siteId }, '_id');
+      // If manager, ensure requested siteId is in assignedSites
+      if (req.user.role !== 'manager' || allowedSiteIds.includes(req.query.siteId)) {
+        const equipment = await Equipment.find({ siteId: req.query.siteId }, '_id');
+        filter.equipmentId = { $in: equipment.map(e => e._id) };
+      } else {
+        filter.equipmentId = { $in: [] }; // Manager requested a site they don't have access to
+      }
+    } else if (req.user.role === 'manager') {
+      const equipment = await Equipment.find({ siteId: { $in: allowedSiteIds } }, '_id');
       filter.equipmentId = { $in: equipment.map(e => e._id) };
     }
     const alerts = await Alert.find(filter)

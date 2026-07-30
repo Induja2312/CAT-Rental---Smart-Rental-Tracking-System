@@ -100,10 +100,20 @@ router.get('/fleet-activity', requireAuth, requireRole('manager', 'admin'), asyn
       .populate('operatorId', 'name email')
       .populate({ path: 'equipmentId', populate: { path: 'siteId' } });
 
+    // Filter by assignedSites if user is a manager
+    let filteredSessions = activeSessions;
+    if (req.user.role === 'manager') {
+      const allowedSiteIds = (req.user.assignedSites || []).map(String);
+      filteredSessions = activeSessions.filter((sess) => {
+        const siteId = sess.equipmentId?.siteId?._id?.toString() || sess.equipmentId?.siteId?.toString();
+        return allowedSiteIds.includes(siteId);
+      });
+    }
+
     const now = new Date();
 
     const activityList = await Promise.all(
-      activeSessions.map(async (sess) => {
+      filteredSessions.map(async (sess) => {
         const eq = sess.equipmentId;
         if (!eq) return null;
 

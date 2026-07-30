@@ -87,8 +87,17 @@ router.get('/mine', requireAuth, requireRole('customer'), async (req, res) => {
 // GET /api/rentals/export-pdf & /api/reports/pdf — PDF Report Generator for Manager & Admin Fleet Summary
 const generateFleetPDF = async (req, res) => {
   try {
-    const equipments = await Equipment.find().populate('siteId', 'name').populate('lastOperatorId', 'name').lean();
-    const rentals = await Rental.find().populate('equipmentId', 'equipmentId type').populate('customerId', 'name email').sort({ checkInDate: -1 }).limit(20).lean();
+    let eqFilter = {};
+    if (req.user.role === 'manager') {
+      eqFilter.siteId = { $in: req.user.assignedSites || [] };
+    }
+    const equipments = await Equipment.find(eqFilter).populate('siteId', 'name').populate('lastOperatorId', 'name').lean();
+    
+    let rentalFilter = {};
+    if (req.user.role === 'manager') {
+      rentalFilter.equipmentId = { $in: equipments.map(e => e._id) };
+    }
+    const rentals = await Rental.find(rentalFilter).populate('equipmentId', 'equipmentId type').populate('customerId', 'name email').sort({ checkInDate: -1 }).limit(20).lean();
     const currentUser = await User.findById(req.user.id, 'name email role').lean();
 
     const doc = new PDFDocument({ margin: 40, size: 'A4' });

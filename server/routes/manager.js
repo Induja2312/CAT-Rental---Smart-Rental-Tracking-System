@@ -13,8 +13,8 @@ const round2 = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v);
 router.get('/equipment', ...guard, async (req, res) => {
   try {
     const filter = {};
-    if (req.user.role === 'manager' && req.user.assignedSites?.length) {
-      filter.siteId = { $in: req.user.assignedSites };
+    if (req.user.role === 'manager') {
+      filter.siteId = { $in: req.user.assignedSites || [] };
     }
 
     const equipment = await Equipment.find(filter)

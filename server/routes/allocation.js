@@ -112,10 +112,9 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
 
     // For managers: scope to their assignedSites only
     let visibleSites = sites;
-    if (req.user.role === 'manager' && req.user.assignedSites?.length) {
-      const assignedSet = new Set(req.user.assignedSites.map(String));
+    if (req.user.role === 'manager') {
+      const assignedSet = new Set((req.user.assignedSites || []).map(String));
       visibleSites = sites.filter((s) => assignedSet.has(s._id.toString()));
-      if (visibleSites.length === 0) visibleSites = sites; // fallback: show all if none assigned yet
     }
 
     let targetSite = visibleSites.find((s) => s._id.toString() === siteId);
@@ -126,6 +125,10 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
     const eqFilter = {};
     if (type && type !== 'All') {
       eqFilter.type = new RegExp(type, 'i');
+    }
+    
+    if (req.user.role === 'manager') {
+      eqFilter.siteId = { $in: req.user.assignedSites || [] };
     }
 
     const equipments = await Equipment.find(eqFilter)
