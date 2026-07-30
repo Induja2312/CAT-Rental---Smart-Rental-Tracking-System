@@ -34,7 +34,7 @@ const createEquipmentIcon = (type, status, isSelected = false) => {
       flex-direction: column;
       align-items: center;
       filter: ${shadowFilter};
-      cursor: pointer;
+      cursor: pointer !important;
       transition: transform 0.2s ease;
     ">
       <!-- Pin Header Badge -->
@@ -51,6 +51,7 @@ const createEquipmentIcon = (type, status, isSelected = false) => {
         font-size: 11px;
         font-weight: 800;
         white-space: nowrap;
+        cursor: pointer !important;
       ">
         <span style="
           width: 8px;
@@ -70,6 +71,7 @@ const createEquipmentIcon = (type, status, isSelected = false) => {
         border-right: 6px solid transparent;
         border-top: 7px solid ${strokeColor};
         margin-top: -1px;
+        cursor: pointer !important;
       "></div>
     </div>
   `;
@@ -103,6 +105,7 @@ const createSiteIcon = (siteName) => {
       border: 1.5px solid #000000;
       white-space: nowrap;
       letter-spacing: 0.5px;
+      cursor: pointer !important;
     ">
       <span style="font-size: 12px;">📍</span>
       <span>${shortName}</span>
@@ -209,6 +212,14 @@ export default function MapView({
           maxZoom: 19,
         }
       ).addTo(map);
+
+      // Force high-contrast cursor on map drag events
+      map.on('dragstart', () => {
+        if (mapContainerRef.current) mapContainerRef.current.style.cursor = 'move';
+      });
+      map.on('dragend', () => {
+        if (mapContainerRef.current) mapContainerRef.current.style.cursor = 'crosshair';
+      });
 
       mapRef.current = map;
     }
@@ -390,7 +401,11 @@ export default function MapView({
 
       {/* Map DOM Element */}
       <div className="h-[520px] w-full rounded-md overflow-hidden relative border border-zinc-200 shadow-inner">
-        <div ref={mapContainerRef} className="w-full h-full" />
+        <div
+          ref={mapContainerRef}
+          className="w-full h-full"
+          style={{ cursor: 'crosshair' }}
+        />
       </div>
     </div>
   );

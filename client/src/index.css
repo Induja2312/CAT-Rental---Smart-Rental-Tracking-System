@@ -32,39 +32,36 @@
   background: #a1a1aa;
 }
 
-/* Custom Leaflet Map styling - High Contrast Enterprise Cursors */
-.leaflet-container {
-  background-color: #e4e4e7 !important;
-  font-family: inherit;
-  border-radius: 6px;
+/* Custom Leaflet Map styling - Force Crosshair/Move Cursor to eliminate white hand */
+.leaflet-container,
+.leaflet-container div,
+.leaflet-container canvas,
+.leaflet-container svg,
+.leaflet-pane,
+.leaflet-tile-pane,
+.leaflet-grab {
   cursor: crosshair !important;
 }
 
-.leaflet-grab {
-  cursor: grab !important;
+.leaflet-grab:active,
+.leaflet-grabbing,
+.leaflet-container:active {
+  cursor: move !important;
 }
 
-.leaflet-grabbing {
-  cursor: grabbing !important;
-}
-
-.leaflet-interactive {
-  cursor: pointer !important;
-}
-
-/* High-contrast hover effect for interactive Leaflet Markers */
+/* Interactive Map Markers & Pin Badges */
+.leaflet-interactive,
+.leaflet-marker-icon,
+.leaflet-marker-icon *,
 .sleek-cat-equipment-marker,
+.sleek-cat-equipment-marker *,
 .sleek-cat-site-marker,
-.custom-cat-equipment-marker,
-.custom-cat-site-marker {
+.sleek-cat-site-marker * {
   cursor: pointer !important;
-  transition: transform 0.15s ease-in-out;
 }
 
 .sleek-cat-equipment-marker:hover,
-.sleek-cat-site-marker:hover,
-.custom-cat-equipment-marker:hover,
-.custom-cat-site-marker:hover {
+.sleek-cat-site-marker:hover {
   cursor: pointer !important;
   transform: scale(1.12);
   z-index: 1000 !important;
