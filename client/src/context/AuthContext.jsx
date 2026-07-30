@@ -7,14 +7,16 @@ export const AuthProvider = ({ children }) => {
     const token = localStorage.getItem('token');
     const role  = localStorage.getItem('role');
     const name  = localStorage.getItem('name');
-    return token ? { token, role, name } : null;
+    const assignedSites = JSON.parse(localStorage.getItem('assignedSites') || '[]');
+    return token ? { token, role, name, assignedSites } : null;
   });
 
-  const login = ({ token, role, name }) => {
+  const login = ({ token, role, name, assignedSites = [] }) => {
     localStorage.setItem('token', token);
     localStorage.setItem('role', role);
     localStorage.setItem('name', name);
-    setAuth({ token, role, name });
+    localStorage.setItem('assignedSites', JSON.stringify(assignedSites));
+    setAuth({ token, role, name, assignedSites });
   };
 
   const logout = () => {

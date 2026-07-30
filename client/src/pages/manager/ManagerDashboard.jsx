@@ -526,6 +526,7 @@ export default function ManagerDashboard() {
             <MapView
               equipments={equipments}
               sites={sites}
+              assignedSiteIds={auth?.assignedSites?.map(String) || []}
               selectedDijkstraPath={selectedDijkstraPath}
               selectedMachine={selectedMachine}
               onSelectMachine={(m) => setSelectedMachine(m)}

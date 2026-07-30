@@ -110,9 +110,17 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
       return res.status(404).json({ message: 'No construction sites found' });
     }
 
-    let targetSite = sites.find((s) => s._id.toString() === siteId);
+    // For managers: scope to their assignedSites only
+    let visibleSites = sites;
+    if (req.user.role === 'manager' && req.user.assignedSites?.length) {
+      const assignedSet = new Set(req.user.assignedSites.map(String));
+      visibleSites = sites.filter((s) => assignedSet.has(s._id.toString()));
+      if (visibleSites.length === 0) visibleSites = sites; // fallback: show all if none assigned yet
+    }
+
+    let targetSite = visibleSites.find((s) => s._id.toString() === siteId);
     if (!targetSite) {
-      targetSite = sites[0];
+      targetSite = visibleSites[0];
     }
 
     const eqFilter = {};
@@ -198,7 +206,7 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
 
     res.json({
       targetSite,
-      sitesNetwork: sites,
+      sitesNetwork: visibleSites,
       recommendations,
     });
   } catch (err) {

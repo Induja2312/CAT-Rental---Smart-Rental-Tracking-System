@@ -4,9 +4,11 @@ import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
 import EquipmentList from './EquipmentList';
 import CreateEquipmentForm from './CreateEquipmentForm';
+import SiteList from './SiteList';
+import FullMapView from './FullMapView';
 import {
   LogOut, Cpu, Users, MapPin, Package,
-  TrendingUp, AlertTriangle, CheckCircle2, Settings,
+  TrendingUp, AlertTriangle, CheckCircle2, Settings, Map,
 } from 'lucide-react';
 
 function StatCard({ label, value, sub, color, icon: Icon }) {
@@ -25,10 +27,11 @@ function StatCard({ label, value, sub, color, icon: Icon }) {
 }
 
 const NAV = [
-  { key: 'overview', label: 'Overview',  icon: TrendingUp,  path: '/admin' },
-  { key: 'equipment', label: 'Equipment', icon: Cpu,         path: '/admin/equipment' },
-  { key: 'users',    label: 'Users',     icon: Users,       path: '/admin/users' },
-  { key: 'sites',    label: 'Sites',     icon: MapPin,      path: '/admin/sites' },
+  { key: 'overview',  label: 'Overview',  icon: TrendingUp, path: '/admin' },
+  { key: 'equipment', label: 'Equipment', icon: Cpu,        path: '/admin/equipment' },
+  { key: 'users',     label: 'Users',     icon: Users,      path: '/admin/users' },
+  { key: 'sites',     label: 'Sites',     icon: MapPin,     path: '/admin/sites' },
+  { key: 'map',       label: 'Fleet Map', icon: Map,        path: '/admin/map' },
 ];
 
 function Overview({ stats }) {
@@ -380,7 +383,8 @@ export default function AdminDashboard() {
             <Route path="equipment/new" element={<CreateEquipmentForm />} />
             <Route path="equipment/:id/edit" element={<CreateEquipmentForm />} />
             <Route path="users" element={<UsersPanel />} />
-            <Route path="sites" element={<SitesPanel />} />
+            <Route path="sites" element={<SiteList />} />
+            <Route path="map" element={<FullMapView />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />
           </Routes>
         </main>

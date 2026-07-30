@@ -95,11 +95,69 @@ router.get('/managers', ...guard, async (req, res) => {
   }
 });
 
-// GET /api/admin/sites — list all sites (for dropdowns)
+// GET /api/admin/sites — list all sites (filterable by ?status=pending|active)
 router.get('/sites', ...guard, async (req, res) => {
   try {
-    const sites = await Site.find({}, 'name location');
+    const filter = {};
+    if (req.query.status) filter.status = req.query.status;
+    const sites = await Site.find(filter).sort({ name: 1 });
     res.json(sites);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/admin/sites
+router.post('/sites', ...guard, async (req, res) => {
+  try {
+    const { name, lat, lng } = req.body;
+    if (!name || lat == null || lng == null) return res.status(400).json({ message: 'name, lat and lng are required' });
+    const site = await Site.create({ name, location: { lat: +lat, lng: +lng }, status: 'active' });
+    res.status(201).json(site);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT /api/admin/sites/:id — edit or approve (set status=active)
+router.put('/sites/:id', ...guard, async (req, res) => {
+  try {
+    const { name, lat, lng, status } = req.body;
+    const update = {};
+    if (name   !== undefined) update.name   = name;
+    if (status !== undefined) update.status = status;
+    if (lat    != null)       update['location.lat'] = +lat;
+    if (lng    != null)       update['location.lng'] = +lng;
+    const site = await Site.findByIdAndUpdate(req.params.id, update, { new: true });
+    if (!site) return res.status(404).json({ message: 'Site not found' });
+    res.json(site);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE /api/admin/sites/:id
+router.delete('/sites/:id', ...guard, async (req, res) => {
+  try {
+    const site = await Site.findByIdAndDelete(req.params.id);
+    if (!site) return res.status(404).json({ message: 'Site not found' });
+    res.json({ message: `${site.name} deleted` });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PUT /api/admin/managers/:id/sites — assign sites to a manager
+router.put('/managers/:id/sites', ...guard, async (req, res) => {
+  try {
+    const { siteIds } = req.body; // array of site ObjectIds
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      { assignedSites: siteIds || [] },
+      { new: true }
+    ).populate('assignedSites', 'name location status');
+    if (!user) return res.status(404).json({ message: 'Manager not found' });
+    res.json(user);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
