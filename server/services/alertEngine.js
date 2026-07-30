@@ -99,4 +99,4 @@ const checkAndAlert = async (equipmentObjectId, equipmentId, engineHoursToday, i
   }
 };
 
-module.exports = { checkAndAlert };
+module.exports = { checkAndAlert, raiseAlert };
