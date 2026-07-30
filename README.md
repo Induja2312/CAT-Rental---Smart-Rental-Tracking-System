@@ -50,7 +50,7 @@ npm install
 npm run dev                  # starts on port 5173
 ```
 
-### 4. ML service (stretch — optional)
+### 4. ML Service (Anomaly Detection)
 ```bash
 cd ml-service
 python -m venv .venv && source .venv/bin/activate

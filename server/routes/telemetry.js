@@ -1,9 +1,38 @@
 const router = require('express').Router();
 const Equipment = require('../models/Equipment');
 const Telemetry = require('../models/Telemetry');
+const OperatorSession = require('../models/OperatorSession');
 const { getIO, TELEMETRY_UPDATE, EQUIPMENT_STATUS } = require('../sockets');
-const { checkAndAlert } = require('../services/alertEngine');
+const { checkAndAlert, raiseAlert } = require('../services/alertEngine');
 const { computeForecast } = require('../services/forecastService');
+const { checkAllRules } = require('../services/alertRules');
+const axios = require('axios');
+
+// ML Batch Processor
+const mlBatch = [];
+const ML_URL = 'http://localhost:8000';
+
+setInterval(async () => {
+  if (mlBatch.length === 0) return;
+  const batchToProcess = [...mlBatch];
+  mlBatch.length = 0;
+
+  try {
+    for (const data of batchToProcess) {
+      const res = await axios.post(`${ML_URL}/predict`, data.features, { timeout: 3000 });
+      if (res.data && res.data.is_anomaly) {
+        await raiseAlert(
+          data.equipmentObjectId,
+          res.data.anomaly_type || 'ml_anomaly',
+          `ML Anomaly detected: ${res.data.anomaly_type}`,
+          'high'
+        );
+      }
+    }
+  } catch (err) {
+    console.warn('ML Service unreachable, skipping batch:', err.message);
+  }
+}, 30000);
 
 // Derive equipment status from telemetry values
 const deriveStatus = (engineHours, fuelLevel) => {
@@ -13,10 +42,10 @@ const deriveStatus = (engineHours, fuelLevel) => {
 };
 
 // POST /api/telemetry/ingest
-// Body: { equipmentId (string e.g. "EQX1001"), location, engineHoursToday, idleHoursToday, fuelLevel, operatorId }
+// Body: { equipmentId (string e.g. "EQX1001"), location, engineHoursToday, idleHoursToday, fuelLevel, engineTemperature, operatorId }
 router.post('/ingest', async (req, res) => {
   try {
-    const { equipmentId, location, engineHoursToday, idleHoursToday, fuelLevel, operatorId } = req.body;
+    const { equipmentId, location, engineHoursToday, idleHoursToday, fuelLevel, engineTemperature, operatorId } = req.body;
 
     // Resolve string equipmentId -> Equipment document
     const equipment = await Equipment.findOne({ equipmentId });
@@ -29,8 +58,12 @@ router.post('/ingest', async (req, res) => {
       engineHoursToday,
       idleHoursToday,
       fuelLevel,
+      engineTemperature,
       operatorId:       operatorId || null,
     });
+
+    // Fetch active session if any
+    const activeSession = await OperatorSession.findOne({ equipmentId: equipment._id, status: 'active' });
 
     // Emit telemetry update to all connected clients
     const io = getIO();
@@ -40,6 +73,7 @@ router.post('/ingest', async (req, res) => {
       engineHoursToday,
       idleHoursToday,
       fuelLevel,
+      engineTemperature,
       operatorId,
     });
 
@@ -63,6 +97,47 @@ router.post('/ingest', async (req, res) => {
     // Run alert rules asynchronously — don't block the ingest response
     checkAndAlert(equipment._id, equipmentId, engineHoursToday, idleHoursToday, operatorId)
       .catch(err => console.error('alertEngine error:', err.message));
+
+    // NEW: Deterministic Alert Rules
+    try {
+      const alerts = checkAllRules(record, equipment, activeSession);
+      for (const a of alerts) {
+        await raiseAlert(equipment._id, a.type, a.message, a.severity);
+      }
+    } catch (e) {
+      console.error('alertRules error:', e.message);
+    }
+
+    // Prepare ML Features
+    let idleEngineRatio = idleHoursToday;
+    if (engineHoursToday > 0) idleEngineRatio = idleHoursToday / engineHoursToday;
+    
+    let daysSinceOperatorAssigned = 0;
+    if (!operatorId && !equipment.lastOperatorId) {
+      daysSinceOperatorAssigned = 1; // Arbitrary fallback if never assigned
+    }
+
+    let sessionUtilizationRatio = 0;
+    if (activeSession) {
+      const sessionStartMs = new Date(activeSession.clockInTime).getTime();
+      const nowMs = new Date().getTime();
+      const sessionDurationHours = (nowMs - sessionStartMs) / (1000 * 60 * 60);
+      if (sessionDurationHours > 0) {
+        sessionUtilizationRatio = Math.min(1, engineHoursToday / sessionDurationHours);
+      }
+    }
+
+    mlBatch.push({
+      equipmentObjectId: equipment._id,
+      features: {
+        engineHoursToday: engineHoursToday || 0,
+        idleHoursToday: idleHoursToday || 0,
+        idleEngineRatio: idleEngineRatio,
+        daysSinceOperatorAssigned: daysSinceOperatorAssigned,
+        engineTemperature: engineTemperature || 75,
+        sessionUtilizationRatio: sessionUtilizationRatio
+      }
+    });
 
     res.status(201).json({ id: record._id });
   } catch (err) {

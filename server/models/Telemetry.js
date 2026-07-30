@@ -6,6 +6,7 @@ const TelemetrySchema = new Schema({
   engineHoursToday: Number,
   idleHoursToday:   Number,
   fuelLevel:        Number,
+  engineTemperature:Number,
   location:         { lat: Number, lng: Number },
   operatorId:       { type: Schema.Types.ObjectId, ref: 'User' },
 });
