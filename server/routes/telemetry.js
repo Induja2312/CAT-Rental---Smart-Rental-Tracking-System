@@ -2,6 +2,7 @@ const router = require('express').Router();
 const Equipment = require('../models/Equipment');
 const Telemetry = require('../models/Telemetry');
 const { getIO, TELEMETRY_UPDATE, EQUIPMENT_STATUS } = require('../sockets');
+const { checkAndAlert } = require('../services/alertEngine');
 
 // Derive equipment status from telemetry values
 const deriveStatus = (engineHours, fuelLevel) => {
@@ -57,6 +58,10 @@ router.post('/ingest', async (req, res) => {
         lastOperatorId:  operatorId || equipment.lastOperatorId,
       });
     }
+
+    // Run alert rules asynchronously — don't block the ingest response
+    checkAndAlert(equipment._id, equipmentId, engineHoursToday, idleHoursToday, operatorId)
+      .catch(err => console.error('alertEngine error:', err.message));
 
     res.status(201).json({ id: record._id });
   } catch (err) {
