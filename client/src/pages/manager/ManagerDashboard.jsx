@@ -25,7 +25,7 @@ import {
   Gauge,
 } from 'lucide-react';
 
-// Tamil Nadu Fallback Dataset (Grounded in Problem Prompt Table)
+// Default Fallback Dataset (Grounded in Problem Prompt Table)
 const FALLBACK_EQUIPMENT = [
   {
     _id: 'eq1',
@@ -188,7 +188,7 @@ export default function ManagerDashboard() {
         setSites(res.data.sitesNetwork);
       }
     } catch (err) {
-      console.log('Using Tamil Nadu fallback dataset');
+      console.log('Using fallback dataset');
     } finally {
       setLoading(false);
     }
@@ -213,15 +213,15 @@ export default function ManagerDashboard() {
             <div className="bg-[#FFC500] text-black font-black text-2xl px-3 py-1 rounded-sm tracking-tighter shadow-sm flex items-center gap-1.5 border-b-2 border-black/20">
               <span>CAT</span>
               <span className="text-xs bg-black text-[#FFC500] px-1.5 py-0.5 font-mono uppercase font-bold tracking-widest">
-                TAMIL NADU
+                RENTALS
               </span>
             </div>
             <div className="hidden sm:block">
               <h1 className="font-bold text-white text-base tracking-tight uppercase">
-                Tamil Nadu Fleet Operating Portal
+                CAT Rentals Operating Portal
               </h1>
               <p className="text-[10px] font-mono text-zinc-400 uppercase tracking-widest">
-                Geofence Radius Tracking • Machine Telematics • Dijkstra Routing
+                Geofence Radius Tracking • Machine Telematics • Optimal Routing
               </p>
             </div>
           </div>
@@ -241,7 +241,7 @@ export default function ManagerDashboard() {
                 }`}
               ></span>
               <span className="hidden md:inline">
-                {socketConnected ? 'Tamil Nadu Node Live' : 'Telematics Standby'}
+                {socketConnected ? 'Primary Node Live' : 'Telematics Standby'}
               </span>
             </div>
 
@@ -249,7 +249,7 @@ export default function ManagerDashboard() {
               <UserCheck className="w-4 h-4 text-[#FFC500]" />
               <div>
                 <span className="font-bold text-white uppercase block leading-none">
-                  {auth?.name || 'TN Operations Lead'}
+                  {auth?.name || 'Operations Lead'}
                 </span>
                 <span className="text-[10px] font-mono text-zinc-400 uppercase">
                   Role: {auth?.role || 'manager'}
@@ -369,7 +369,7 @@ export default function ManagerDashboard() {
                   </span>
                 </div>
                 <p className="text-xs text-zinc-500 font-mono mt-0.5">
-                  STATIONED AT: <strong className="text-zinc-900">{selectedMachine.siteId?.name || 'Tamil Nadu Depot'}</strong> | OPERATOR: <strong className="text-zinc-900">{selectedMachine.lastOperatorId?.name || 'UNASSIGNED'}</strong>
+                  STATIONED AT: <strong className="text-zinc-900">{selectedMachine.siteId?.name || 'Main Depot'}</strong> | OPERATOR: <strong className="text-zinc-900">{selectedMachine.lastOperatorId?.name || 'UNASSIGNED'}</strong>
                 </p>
               </div>
             </div>
@@ -407,7 +407,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <Navigation className="w-4 h-4" /> Tamil Nadu GIS Map & Geofence Radius
+            <Navigation className="w-4 h-4" /> GIS Map & Geofence Radius
           </button>
 
           <button
@@ -418,7 +418,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <Activity className="w-4 h-4" /> Dijkstra Transfer Engine
+            <Activity className="w-4 h-4" /> Optimal Real-Time Route Finder
           </button>
 
           <button
@@ -483,7 +483,7 @@ export default function ManagerDashboard() {
 
       {/* Enterprise Footer */}
       <footer className="bg-white border-t border-zinc-200 py-4 text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">
-        CATERPILLAR ENTERPRISE TELEMATICS • TAMIL NADU REGION • DIJKSTRA GRAPH OPTIMIZER
+        CAT RENTALS ENTERPRISE TELEMATICS • GLOBAL REGION • OPTIMAL ROUTE ESTIMATOR
       </footer>
     </div>
   );

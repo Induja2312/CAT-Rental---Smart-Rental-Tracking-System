@@ -253,14 +253,14 @@ export default function MapView({
           dashArray: '6, 6',
         }).addTo(map);
 
-        circle.bindPopup(`
+        circle.bindTooltip(`
           <div style="font-family: Inter, sans-serif; color: #18181b; padding: 4px;">
             <strong style="color: #18181b; font-size: 13px; font-weight: 900; text-transform: uppercase;">📍 ${site.name}</strong>
             <p style="margin: 4px 0 0 0; font-size: 11px; font-family: monospace; color: #71717a;">
               Geofence Radius: <strong>${site.radiusKm || 15} KM</strong> Coverage
             </p>
             <p style="margin: 2px 0 0 0; font-size: 11px; font-family: monospace; color: #71717a;">
-              TN Coordinates: ${site.location.lat.toFixed(4)}, ${site.location.lng.toFixed(4)}
+              Coordinates: ${site.location.lat.toFixed(4)}, ${site.location.lng.toFixed(4)}
             </p>
           </div>
         `);
@@ -302,7 +302,7 @@ export default function MapView({
 
         const { label, icon } = getMachineTypeLabel(eq.type);
 
-        marker.bindPopup(`
+        marker.bindTooltip(`
           <div style="color: #18181b; font-family: Inter, sans-serif; min-width: 220px; padding: 4px;">
             <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e4e4e7; padding-bottom: 6px; margin-bottom: 8px;">
               <span style="font-size: 15px;">${icon} <strong style="color: #18181b; font-size: 15px; font-family: monospace; font-weight: 900;">${eq.equipmentId}</strong></span>
@@ -312,7 +312,7 @@ export default function MapView({
             </div>
             <div style="font-size: 12px; line-height: 1.6; color: #27272a;">
               <div><strong>Machine Category:</strong> ${label}</div>
-              <div><strong>Stationed Site:</strong> ${eq.siteId?.name || 'Tamil Nadu Depot'}</div>
+              <div><strong>Stationed Site:</strong> ${eq.siteId?.name || 'Main Depot'}</div>
               <div><strong>Operator ID:</strong> <span style="font-family: monospace; font-weight: 800;">${eq.lastOperatorId?.name || 'UNASSIGNED'}</span></div>
               <div><strong>Engine Run:</strong> <span style="font-family: monospace; font-weight: 800; color: #047857;">${eq.engineHoursToday ?? 4} hrs/day</span></div>
               <div><strong>Idle Hours:</strong> <span style="font-family: monospace; font-weight: 800; color: #B45309;">${eq.idleHoursToday ?? 2} hrs/day</span></div>
@@ -326,7 +326,7 @@ export default function MapView({
       }
     });
 
-    // Dijkstra Polyline Route Overlay
+    // Optimal Polyline Route Overlay
     if (selectedDijkstraPath && selectedDijkstraPath.length > 1) {
       const pathPoints = selectedDijkstraPath
         .filter((s) => s.location?.lat)
@@ -360,7 +360,7 @@ export default function MapView({
           </div>
           <div>
             <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
-              Tamil Nadu Fleet GIS Positioning & Geofence Map
+              Fleet GIS Positioning & Geofence Map
             </h3>
             <p className="text-xs text-zinc-500 font-medium">
               Geofence Radius Circles (15KM Zone Tracking) & Real-Time Machine Telematics
@@ -375,7 +375,7 @@ export default function MapView({
             onChange={(e) => setFilterSite(e.target.value)}
             className="bg-white border border-zinc-300 text-zinc-900 text-xs font-bold rounded-md px-4 min-h-[48px] focus:border-[#FFC500] focus:ring-2 focus:ring-[#FFC500]/30 focus:outline-none cursor-pointer"
           >
-            <option value="all">ALL TN SITES ({liveEquipment.length} ASSETS)</option>
+            <option value="all">ALL SITES ({liveEquipment.length} ASSETS)</option>
             <option value="assigned">MY ASSIGNED SITES ONLY</option>
             {sites.map((s) => (
               <option key={s._id} value={s._id}>

@@ -24,7 +24,7 @@ const seed = async () => {
   const passwordHash = await bcrypt.hash('admin123', 10);
   await User.create({
     name: 'Tamil Nadu Fleet Operations Manager',
-    email: 'admin@catrental.com',
+    email: 'admin@catrentals.com',
     passwordHash,
     role: 'admin',
     assignedSites: sites.map((s) => s._id),
@@ -42,23 +42,23 @@ const seed = async () => {
   ]);
 
   console.log('Seed complete: 1 Manager/Admin, 5 Tamil Nadu sites, 7 Equipment items');
-  console.log('Login: admin@catrental.com / admin123');
+  console.log('Login: admin@catrentals.com / admin123');
   const customerHash = await bcrypt.hash('customer123', 10);
   const customer = await User.create({
     name: 'Test Customer',
-    email: 'customer@catrental.com',
+    email: 'customer@catrentals.com',
     passwordHash: customerHash,
     role: 'customer',
   });
 
   const equipment = await Equipment.insertMany([
-    { equipmentId: 'EQX1001', type: 'Excavator',    siteId: sites[0]._id, status: 'active',      currentLocation: { lat: 37.775, lng: -122.419 } },
-    { equipmentId: 'EQX1002', type: 'Bulldozer',    siteId: sites[0]._id, status: 'idle',        currentLocation: { lat: 37.776, lng: -122.420 } },
-    { equipmentId: 'EQX1003', type: 'Crane',        siteId: sites[1]._id, status: 'active',      currentLocation: { lat: 34.052, lng: -118.243 } },
-    { equipmentId: 'EQX1004', type: 'Loader',       siteId: sites[1]._id, status: 'overdue',     currentLocation: { lat: 34.053, lng: -118.244 } },
-    { equipmentId: 'EQX1005', type: 'Grader',       siteId: sites[2]._id, status: 'idle',        currentLocation: { lat: 41.878, lng: -87.629  } },
-    { equipmentId: 'EQX1006', type: 'Compactor',    siteId: sites[2]._id, status: 'active',      currentLocation: { lat: 41.879, lng: -87.630  } },
-    { equipmentId: 'EQX1007', type: 'Dump Truck',   siteId: null,         status: 'unassigned',  currentLocation: { lat: 0,      lng: 0         } },
+    { equipmentId: 'EQX2001', type: 'Excavator',    siteId: sites[0]._id, status: 'active',      currentLocation: { lat: 37.775, lng: -122.419 } },
+    { equipmentId: 'EQX2002', type: 'Bulldozer',    siteId: sites[0]._id, status: 'idle',        currentLocation: { lat: 37.776, lng: -122.420 } },
+    { equipmentId: 'EQX2003', type: 'Crane',        siteId: sites[1]._id, status: 'active',      currentLocation: { lat: 34.052, lng: -118.243 } },
+    { equipmentId: 'EQX2004', type: 'Loader',       siteId: sites[1]._id, status: 'overdue',     currentLocation: { lat: 34.053, lng: -118.244 } },
+    { equipmentId: 'EQX2005', type: 'Grader',       siteId: sites[2]._id, status: 'idle',        currentLocation: { lat: 41.878, lng: -87.629  } },
+    { equipmentId: 'EQX2006', type: 'Compactor',    siteId: sites[2]._id, status: 'active',      currentLocation: { lat: 41.879, lng: -87.630  } },
+    { equipmentId: 'EQX2007', type: 'Dump Truck',   siteId: null,         status: 'unassigned',  currentLocation: { lat: 0,      lng: 0         } },
   ]);
 
   const now = new Date();
@@ -80,8 +80,8 @@ const seed = async () => {
   ]);
 
   console.log('Seed complete: 1 admin, 1 customer, 3 sites, 7 equipment, 2 rentals');
-  console.log('Admin Login: admin@catrental.com / admin123');
-  console.log('Customer Login: customer@catrental.com / customer123');
+  console.log('Admin Login: admin@catrentals.com / admin123');
+  console.log('Customer Login: customer@catrentals.com / customer123');
   await mongoose.disconnect();
 };
 

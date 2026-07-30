@@ -108,21 +108,11 @@ export default function AllocationPanel({
             </div>
             <div>
               <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
-                Dijkstra Shortest Path Machinery Reallocation Engine
+                Optimal Real-Time Route Finder & Estimator
               </h3>
               <p className="text-xs text-zinc-500 font-medium">
                 Recommends optimal candidate machine for site transfer using field graph routing
               </p>
-            </div>
-          </div>
-
-          {/* Formula Display Box */}
-          <div className="bg-zinc-50 border border-zinc-200 p-3.5 rounded-md text-xs space-y-1">
-            <div className="font-mono text-zinc-900 font-bold text-xs">
-              SCORE = 0.4 × (1 / DISTANCE) + 0.4 × (1 - UTILIZATION) + 0.2 × IS_AVAILABLE
-            </div>
-            <div className="text-[10px] text-zinc-500 uppercase font-mono">
-              Cat Telematics Weighting Model • Minimum Field Transit Route
             </div>
           </div>
         </div>
@@ -173,7 +163,7 @@ export default function AllocationPanel({
               className="w-full bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold text-xs uppercase tracking-wider min-h-[48px] rounded-md transition shadow flex items-center justify-center gap-2 border-b-2 border-black/20 cursor-pointer disabled:opacity-50"
             >
               <Navigation className="w-4 h-4 stroke-[2.5]" />
-              <span>Run Dijkstra Optimization</span>
+              <span>Run Route Optimization</span>
             </button>
           </div>
         </div>
@@ -198,7 +188,7 @@ export default function AllocationPanel({
       {selectedRec && (
         <div className="bg-white border-2 border-[#FFC500] rounded-md p-5 shadow-sm space-y-4 relative overflow-hidden">
           <div className="absolute top-0 right-0 bg-[#FFC500] text-black font-black text-[10px] uppercase font-mono px-3 py-1 border-b border-l border-black/10">
-            TOP DIJKSTRA MATCH
+            TOP OPTIMAL MATCH
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 pb-4 pt-2">
@@ -224,12 +214,7 @@ export default function AllocationPanel({
             </div>
 
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <span className="text-[10px] font-mono text-zinc-500 block uppercase font-bold">OPTIMAL SCORE</span>
-                <span className="text-3xl font-black font-mono text-zinc-900">
-                  {selectedRec.score}
-                </span>
-              </div>
+
               <button
                 onClick={() => handleExecuteTransfer(selectedRec)}
                 disabled={transferringId === selectedRec.equipment?._id}
@@ -245,34 +230,6 @@ export default function AllocationPanel({
             </div>
           </div>
 
-          {/* Dijkstra Route Visualization Step Bar */}
-          <div className="space-y-2">
-            <label className="text-xs font-bold uppercase tracking-wider text-zinc-700 flex items-center gap-1.5">
-              <Navigation className="w-4 h-4 text-amber-600" /> Dijkstra Shortest Path GIS Nodes:
-            </label>
-            <div className="flex flex-wrap items-center gap-2 bg-zinc-50 p-3 rounded-md border border-zinc-200 font-mono text-xs">
-              {selectedRec.dijkstraPath && selectedRec.dijkstraPath.length > 0 ? (
-                selectedRec.dijkstraPath.map((node, idx) => (
-                  <React.Fragment key={idx}>
-                    <div className="bg-white border border-zinc-300 px-3 py-1.5 rounded text-zinc-800 font-bold flex items-center gap-1.5 shadow-sm">
-                      <MapPin className="w-3.5 h-3.5 text-amber-600" />
-                      {node.name?.toUpperCase() || `NODE ${idx + 1}`}
-                    </div>
-                    {idx < selectedRec.dijkstraPath.length - 1 && (
-                      <ArrowRight className="w-4 h-4 text-zinc-400 shrink-0 stroke-[3]" />
-                    )}
-                  </React.Fragment>
-                ))
-              ) : (
-                <div className="text-xs text-zinc-500 flex items-center gap-2 font-sans font-medium">
-                  <span>Direct Haul Route to</span>
-                  <span className="text-zinc-900 font-bold">
-                    {selectedRec.targetSite?.name?.toUpperCase()}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
 
           {/* Key Metrics Tabular Grid */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-1 font-mono">
@@ -320,8 +277,7 @@ export default function AllocationPanel({
                 <th className="py-3 px-4">STATIONED SITE</th>
                 <th className="py-3 px-4">STATUS</th>
                 <th className="py-3 px-4">DISTANCE</th>
-                <th className="py-3 px-4">UTILIZATION</th>
-                <th className="py-3 px-4">SCORE</th>
+
                 <th className="py-3 px-4 text-right">ACTION</th>
               </tr>
             </thead>
@@ -329,7 +285,7 @@ export default function AllocationPanel({
               {recommendations.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="py-8 text-center text-zinc-500 font-sans text-xs">
-                    {loading ? 'Computing Dijkstra graph paths...' : 'No equipment candidates found.'}
+                    {loading ? 'Computing optimal graph paths...' : 'No equipment candidates found.'}
                   </td>
                 </tr>
               ) : (
@@ -361,8 +317,7 @@ export default function AllocationPanel({
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-bold">{rec.distanceKm} KM</td>
-                    <td className="py-3.5 px-4">{Math.round(rec.currentUtilization * 100)}%</td>
-                    <td className="py-3.5 px-4 font-black text-zinc-900 text-sm">{rec.score}</td>
+
                     <td className="py-3.5 px-4 text-right font-sans">
                       <button
                         onClick={(e) => {
