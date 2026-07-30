@@ -6,6 +6,9 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import EquipmentDetail from './pages/manager/EquipmentDetail';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
+import MyEquipmentTelemetry from './pages/customer/MyEquipmentTelemetry';
+import RequestSite from './pages/customer/RequestSite';
+import DemandForecast from './pages/customer/DemandForecast';
 import OperatorDashboard from './pages/operator/OperatorDashboard';
 
 export default function App() {
@@ -34,6 +37,15 @@ export default function App() {
 
           <Route path="/customer" element={
             <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
+          } />
+          <Route path="/customer/telemetry" element={
+            <ProtectedRoute role="customer"><MyEquipmentTelemetry /></ProtectedRoute>
+          } />
+          <Route path="/customer/request-site" element={
+            <ProtectedRoute role="customer"><RequestSite /></ProtectedRoute>
+          } />
+          <Route path="/customer/forecast" element={
+            <ProtectedRoute role="customer"><DemandForecast /></ProtectedRoute>
           } />
           <Route path="/customer/*" element={
             <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>

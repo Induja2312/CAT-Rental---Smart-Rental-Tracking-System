@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { Link } from 'react-router-dom';
 import api from '../../api/axios';
 import socket, { TELEMETRY_UPDATE, EQUIPMENT_STATUS } from '../../sockets/socket';
 import {
@@ -108,6 +109,12 @@ export default function CustomerDashboard() {
           <span className="font-bold text-black uppercase tracking-wider text-sm hidden md:inline-block border-l-2 border-black/20 pl-4">
             Customer Allocation Portal
           </span>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <Link to="/customer/telemetry" className="bg-black text-[#FFC500] hover:bg-zinc-800 font-bold text-[10px] uppercase px-3 py-1.5 rounded transition font-mono border border-black/20">Live Telemetry</Link>
+          <Link to="/customer/forecast" className="bg-black text-[#FFC500] hover:bg-zinc-800 font-bold text-[10px] uppercase px-3 py-1.5 rounded transition font-mono border border-black/20">Site Forecast</Link>
+          <Link to="/customer/request-site" className="bg-[#FFC500] text-black hover:bg-[#e6b000] font-black text-[10px] uppercase px-3 py-1.5 rounded transition font-mono border border-black/20 shadow-sm">Setup New Site</Link>
         </div>
 
         <div className="flex items-center gap-4">

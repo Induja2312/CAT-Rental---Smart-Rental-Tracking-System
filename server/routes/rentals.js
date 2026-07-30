@@ -2,17 +2,56 @@ const router = require('express').Router();
 const { requireAuth, requireRole } = require('../middleware/auth');
 const Rental = require('../models/Rental');
 const Equipment = require('../models/Equipment');
+const Site = require('../models/Site');
 const User = require('../models/User');
 const { raiseAlert } = require('../services/alertEngine');
 const { sendNotification } = require('../services/emailService');
 const PDFDocument = require('pdfkit');
 
+const TN = { latMin: 8.0, latMax: 13.5, lngMin: 76.0, lngMax: 80.5 };
+const inTN = (lat, lng) => lat >= TN.latMin && lat <= TN.latMax && lng >= TN.lngMin && lng <= TN.lngMax;
+
 const round2 = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v);
+
+// POST /api/rentals/site-request
+router.post('/site-request', requireAuth, requireRole('customer'), async (req, res) => {
+  try {
+    const { siteName, lat, lng, equipmentTypeNeeded, notes } = req.body;
+    if (!siteName || lat == null || lng == null)
+      return res.status(400).json({ message: 'siteName, lat and lng are required' });
+    const la = parseFloat(lat), lo = parseFloat(lng);
+    if (!inTN(la, lo))
+      return res.status(400).json({
+        message: `Coordinates must be within Tamil Nadu (lat 8.0–13.5, lng 76.0–80.5). Got: ${la}, ${lo}`,
+      });
+    const site = await Site.create({
+      name: siteName,
+      location: { lat: la, lng: lo },
+      status: 'pending',
+      submittedBy: req.user.id,
+      equipmentTypeNeeded: equipmentTypeNeeded || '',
+      notes: notes || '',
+    });
+    res.status(201).json(site);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// GET /api/rentals/my-site-requests
+router.get('/my-site-requests', requireAuth, requireRole('customer'), async (req, res) => {
+  try {
+    const sites = await Site.find({ submittedBy: req.user.id }).sort({ createdAt: -1 });
+    res.json(sites);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
 
 // GET /api/rentals/mine
 router.get('/mine', requireAuth, requireRole('customer'), async (req, res) => {
   try {
-    const rentals = await Rental.find({ customerId: req.user.id }).populate('equipmentId');
+    const rentals = await Rental.find({ customerId: req.user.id }).populate({ path: 'equipmentId', populate: { path: 'siteId' } });
     const now = new Date();
 
     for (const rental of rentals) {
@@ -88,14 +127,16 @@ const generateFleetPDF = async (req, res) => {
     doc.fontSize(12).font('Helvetica-Bold').text('EQUIPMENT INVENTORY & TELEMATICS');
     doc.moveDown(0.4);
 
-    const cols = { id: 40, type: 110, site: 210, status: 350, rest: 430, work: 490 };
+    // cols: id=40(w60), type=105(w90), site=200(w130), status=335(w70), rest=410(w50), work=465(w55)
+    const cols = { id: 40, type: 105, site: 200, status: 335, rest: 410, work: 465 };
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Asset ID',       cols.id,   doc.y, { continued: true });
-    doc.text('Category',       cols.type, doc.y, { continued: true });
-    doc.text('Stationed Site', cols.site, doc.y, { continued: true });
-    doc.text('Status',         cols.status, doc.y, { continued: true });
-    doc.text('Rest (h)',       cols.rest, doc.y, { continued: true });
-    doc.text('Max (h)',        cols.work, doc.y);
+    const headerY = doc.y;
+    doc.text('Asset ID',       cols.id,     headerY, { width: 60,  continued: true });
+    doc.text('Category',       cols.type,   headerY, { width: 90,  continued: true });
+    doc.text('Stationed Site', cols.site,   headerY, { width: 130, continued: true });
+    doc.text('Status',         cols.status, headerY, { width: 70,  continued: true });
+    doc.text('Rest (h)',       cols.rest,   headerY, { width: 50,  continued: true });
+    doc.text('Max (h)',        cols.work,   headerY, { width: 55 });
     doc.moveDown(0.3);
     doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke('#18181b');
     doc.moveDown(0.4);
@@ -104,12 +145,12 @@ const generateFleetPDF = async (req, res) => {
     equipments.forEach((eq) => {
       if (doc.y > 740) doc.addPage();
       const y = doc.y;
-      doc.text(eq.equipmentId || 'N/A',            cols.id,     y, { continued: true });
-      doc.text(eq.type || 'N/A',                   cols.type,   y, { continued: true });
-      doc.text(eq.siteId?.name || 'Unassigned',     cols.site,   y, { continued: true });
-      doc.text((eq.status || 'N/A').toUpperCase(),  cols.status, y, { continued: true });
-      doc.text(String(eq.restTimeHours ?? 8),       cols.rest,   y, { continued: true });
-      doc.text(String(eq.maxWorkHoursPerDay ?? 10), cols.work,   y);
+      doc.text((eq.equipmentId || 'N/A').substring(0, 9),              cols.id,     y, { width: 60 });
+      doc.text((eq.type || 'N/A').substring(0, 12),                    cols.type,   y, { width: 90 });
+      doc.text((eq.siteId?.name || 'Unassigned').substring(0, 18),     cols.site,   y, { width: 130 });
+      doc.text((eq.status || 'N/A').toUpperCase().substring(0, 10),    cols.status, y, { width: 70 });
+      doc.text(String(eq.restTimeHours ?? 8),                          cols.rest,   y, { width: 50 });
+      doc.text(String(eq.maxWorkHoursPerDay ?? 10),                    cols.work,   y, { width: 55 });
       doc.moveDown(0.4);
     });
 
@@ -120,27 +161,30 @@ const generateFleetPDF = async (req, res) => {
     doc.fontSize(12).font('Helvetica-Bold').text('ACTIVE RENTAL CONTRACTS & STATUS');
     doc.moveDown(0.4);
 
-    const rCols = { eq: 40, cust: 140, checkIn: 280, checkOut: 400, st: 490 };
+    const rCols = { eq: 40, cust: 135, checkIn: 270, checkOut: 360, st: 450 };
     doc.fontSize(9).font('Helvetica-Bold');
-    doc.text('Equipment',    rCols.eq,       doc.y, { continued: true });
-    doc.text('Customer',     rCols.cust,     doc.y, { continued: true });
-    doc.text('Check-In',     rCols.checkIn,  doc.y, { continued: true });
-    doc.text('Check-Out',    rCols.checkOut, doc.y, { continued: true });
-    doc.text('Status',       rCols.st,       doc.y);
+    const rHeaderY = doc.y;
+    doc.text('Equipment',  rCols.eq,      rHeaderY, { width: 90 });
+    doc.text('Customer',   rCols.cust,    rHeaderY, { width: 130 });
+    doc.text('Check-In',   rCols.checkIn, rHeaderY, { width: 85 });
+    doc.text('Check-Out',  rCols.checkOut,rHeaderY, { width: 85 });
+    doc.text('Status',     rCols.st,      rHeaderY, { width: 65 });
     doc.moveDown(0.3);
     doc.moveTo(40, doc.y).lineTo(555, doc.y).stroke('#18181b');
     doc.moveDown(0.4);
 
+    // Fixed column positions — widths chosen so no column overlaps with realistic data
+    // rCols.eq=40 (width 90), cust=135 (width 130), checkIn=270 (width 85), checkOut=360 (width 85), st=450 (width 65)
+    const fmtD = (d) => (d ? new Date(d).toLocaleDateString('en-GB') : '—');
     doc.font('Helvetica').fontSize(8);
     rentals.forEach((r) => {
       if (doc.y > 740) doc.addPage();
       const y = doc.y;
-      const fmt = (d) => (d ? new Date(d).toLocaleDateString() : '—');
-      doc.text(r.equipmentId?.equipmentId || 'N/A', cols.eq,       y, { continued: true });
-      doc.text(r.customerId?.name || 'N/A',          rCols.cust,     y, { continued: true });
-      doc.text(fmt(r.checkInDate),                  rCols.checkIn,  y, { continued: true });
-      doc.text(fmt(r.checkOutDate),                 rCols.checkOut, y, { continued: true });
-      doc.text((r.status || 'N/A').toUpperCase(),    rCols.st,       y);
+      doc.text((r.equipmentId?.equipmentId || 'N/A').substring(0, 10), rCols.eq,      y, { width: 90 });
+      doc.text((r.customerId?.name || 'N/A').substring(0, 18),          rCols.cust,    y, { width: 130 });
+      doc.text(fmtD(r.checkInDate),                                      rCols.checkIn, y, { width: 85 });
+      doc.text(fmtD(r.checkOutDate),                                     rCols.checkOut,y, { width: 85 });
+      doc.text((r.status || 'N/A').toUpperCase().substring(0, 10),       rCols.st,      y, { width: 65 });
       doc.moveDown(0.4);
     });
 
