@@ -38,7 +38,7 @@ const seed = async () => {
     { equipmentId: 'EQX1004', type: 'Excavator',  siteId: sites[3]._id, status: 'overdue',    currentLocation: { lat: 10.7930, lng: 78.7070 } },
     { equipmentId: 'EQX1005', type: 'Bulldozer',  siteId: sites[4]._id, status: 'active',     currentLocation: { lat: 11.6670, lng: 78.1490 } },
     { equipmentId: 'EQX1006', type: 'Grader',     siteId: sites[0]._id, status: 'idle',       currentLocation: { lat: 13.0800, lng: 80.2680 } },
-    { equipmentId: 'EQX1007', type: 'Excavator',  siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7900, lng: 78.7000 } },
+    { equipmentId: 'EQX1007', type: 'Excavator',  siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7900, lng: 78.7010 } },
   ]);
 
   console.log('Seed complete: 1 Manager/Admin, 5 Tamil Nadu sites, 7 Equipment items');
@@ -60,13 +60,13 @@ const seed = async () => {
   });
 
   const equipment = await Equipment.insertMany([
-    { equipmentId: 'EQX2001', type: 'Excavator',    siteId: sites[0]._id, status: 'active',      currentLocation: { lat: 37.775, lng: -122.419 } },
-    { equipmentId: 'EQX2002', type: 'Bulldozer',    siteId: sites[0]._id, status: 'idle',        currentLocation: { lat: 37.776, lng: -122.420 } },
-    { equipmentId: 'EQX2003', type: 'Crane',        siteId: sites[1]._id, status: 'active',      currentLocation: { lat: 34.052, lng: -118.243 } },
-    { equipmentId: 'EQX2004', type: 'Loader',       siteId: sites[1]._id, status: 'overdue',     currentLocation: { lat: 34.053, lng: -118.244 } },
-    { equipmentId: 'EQX2005', type: 'Grader',       siteId: sites[2]._id, status: 'idle',        currentLocation: { lat: 41.878, lng: -87.629  } },
-    { equipmentId: 'EQX2006', type: 'Compactor',    siteId: sites[2]._id, status: 'active',      currentLocation: { lat: 41.879, lng: -87.630  } },
-    { equipmentId: 'EQX2007', type: 'Dump Truck',   siteId: null,         status: 'unassigned',  currentLocation: { lat: 0,      lng: 0         } },
+    { equipmentId: 'EQX2001', type: 'Excavator',  siteId: sites[0]._id, status: 'active',     currentLocation: { lat: 13.0840, lng: 80.2720 } },
+    { equipmentId: 'EQX2002', type: 'Bulldozer',  siteId: sites[0]._id, status: 'idle',       currentLocation: { lat: 13.0810, lng: 80.2690 } },
+    { equipmentId: 'EQX2003', type: 'Crane',      siteId: sites[1]._id, status: 'active',     currentLocation: { lat: 11.0180, lng: 76.9570 } },
+    { equipmentId: 'EQX2004', type: 'Loader',     siteId: sites[1]._id, status: 'overdue',    currentLocation: { lat: 11.0200, lng: 76.9600 } },
+    { equipmentId: 'EQX2005', type: 'Grader',     siteId: sites[2]._id, status: 'idle',       currentLocation: { lat: 9.9260,  lng: 78.1210 } },
+    { equipmentId: 'EQX2006', type: 'Compactor',  siteId: sites[2]._id, status: 'active',     currentLocation: { lat: 9.9240,  lng: 78.1180 } },
+    { equipmentId: 'EQX2007', type: 'Dump Truck', siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7910, lng: 78.7030 } },
   ]);
 
   const now = new Date();

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
-import socket from '../../sockets/socket';
+import socket, { TELEMETRY_UPDATE, EQUIPMENT_STATUS } from '../../sockets/socket';
 import {
   LogOut,
   MapPin,
@@ -23,11 +23,11 @@ export default function CustomerDashboard() {
   const [loading, setLoading] = useState(true);
   const [liveData, setLiveData] = useState({});
   const [pendingRequests, setPendingRequests] = useState([
-    { id: 'REQ-1092', category: 'Bulldozer', site: 'Site Alpha', date: '2026-08-15', status: 'Pending Review' }
+    { id: 'REQ-1092', category: 'Bulldozer', site: 'Chennai', date: '2026-08-15', status: 'Pending Review' }
   ]);
 
   const [reqForm, setReqForm] = useState({
-    site: 'Site Alpha',
+    site: 'Chennai',
     category: 'Excavator',
     startDate: '',
     endDate: ''
@@ -46,17 +46,20 @@ export default function CustomerDashboard() {
     };
     fetchRentals();
 
-    socket.on('telemetry_update', (data) => {
-      setLiveData((prev) => {
-        const updated = { ...prev };
-        data.forEach((eq) => {
-          updated[eq.equipmentId] = eq;
-        });
-        return updated;
-      });
+    socket.on(TELEMETRY_UPDATE, (data) => {
+      setLiveData((prev) => ({ ...prev, [data.equipmentId]: data }));
+    });
+    socket.on(EQUIPMENT_STATUS, (data) => {
+      setLiveData((prev) => ({
+        ...prev,
+        [data.equipmentId]: { ...(prev[data.equipmentId] || {}), status: data.status },
+      }));
     });
 
-    return () => socket.off('telemetry_update');
+    return () => {
+      socket.off(TELEMETRY_UPDATE);
+      socket.off(EQUIPMENT_STATUS);
+    };
   }, []);
 
   const handleRequestSubmit = (e) => {
@@ -162,9 +165,11 @@ export default function CustomerDashboard() {
                     onChange={e => setReqForm({...reqForm, site: e.target.value})}
                     className="w-full bg-zinc-50 border border-zinc-300 text-zinc-900 text-xs font-bold rounded-md px-3 py-2.5 focus:border-[#FFC500] focus:ring-1 focus:ring-[#FFC500] outline-none"
                   >
-                    <option value="Site Alpha">Site Alpha</option>
-                    <option value="Site Beta">Site Beta</option>
-                    <option value="Site Gamma">Site Gamma</option>
+                  <option value="Chennai">Chennai</option>
+                    <option value="Coimbatore">Coimbatore</option>
+                    <option value="Madurai">Madurai</option>
+                    <option value="Tiruchirappalli">Tiruchirappalli</option>
+                    <option value="Salem">Salem</option>
                   </select>
                 </div>
                 <div>
