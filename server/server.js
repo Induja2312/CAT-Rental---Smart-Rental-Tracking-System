@@ -28,6 +28,7 @@ app.get('/', (req, res) => {
 
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/admin',      require('./routes/admin'));
+app.use('/api/manager',    require('./routes/manager'));
 app.use('/api/rentals',    require('./routes/rentals'));
 app.use('/api/telemetry',  require('./routes/telemetry'));
 app.use('/api/alerts',     require('./routes/alerts'));
