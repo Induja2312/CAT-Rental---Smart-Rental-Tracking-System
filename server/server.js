@@ -4,6 +4,8 @@ const express = require('express');
 const cors = require('cors');
 const connectDB = require('./config/db');
 const { initSocket } = require('./sockets');
+const { startSimulator } = require('./services/telemetrySimulator');
+const { startMLPoller }  = require('./services/mlPoller');
 
 const app = express();
 app.use(cors());
@@ -30,6 +32,7 @@ app.use('/api/rentals',    require('./routes/rentals'));
 app.use('/api/telemetry',  require('./routes/telemetry'));
 app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/allocation', require('./routes/allocation'));
+app.use('/api/ml',         require('./routes/ml'));
 
 const server = http.createServer(app);
 initSocket(server);
@@ -37,5 +40,9 @@ initSocket(server);
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
-  server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  server.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+    startSimulator(`http://localhost:${PORT}`);
+    startMLPoller();
+  });
 });

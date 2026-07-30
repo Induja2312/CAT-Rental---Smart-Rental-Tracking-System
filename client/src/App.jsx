@@ -4,9 +4,12 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Login from './pages/Login';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 
+import CustomerDashboard from './pages/customer/CustomerDashboard';
+
 // Placeholder pages — teammates replace these with real pages
 const AdminDashboard    = () => <div className="p-8">Admin Dashboard — Person A builds here</div>;
 const CustomerDashboard = () => <div className="p-8">Customer Dashboard — Person C builds here</div>;
+const ManagerDashboard  = () => <div className="p-8">Manager Dashboard — Person B builds here</div>;
 
 export default function App() {
   return (
