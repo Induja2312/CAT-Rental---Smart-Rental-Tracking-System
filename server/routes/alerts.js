@@ -76,4 +76,41 @@ router.put('/:id/resolve', requireAuth, async (req, res) => {
   }
 });
 
+// POST /api/alerts/:id/notify-customer — Sends SMTP email notification to the active customer
+const Rental = require('../models/Rental');
+const { sendNotification } = require('../services/emailService');
+
+router.post('/:id/notify-customer', requireAuth, async (req, res) => {
+  try {
+    const alert = await Alert.findById(req.params.id).populate('equipmentId');
+    if (!alert) return res.status(404).json({ message: 'Alert not found' });
+
+    const activeRental = await Rental.findOne({
+      equipmentId: alert.equipmentId._id,
+      status: { $in: ['ongoing', 'overdue'] },
+    }).populate('customerId', 'name email');
+
+    const recipientEmail = activeRental?.customerId?.email || req.body.customerEmail || 'customer@catrentals.com';
+    const recipientName = activeRental?.customerId?.name || 'Valued Customer';
+
+    const subject = `[CAT Rental Alert] Telematics Notification for ${alert.equipmentId.equipmentId}`;
+    const message = `Hello ${recipientName},\n\n` +
+      `This is an automated telematics alert regarding equipment ${alert.equipmentId.equipmentId} (${alert.equipmentId.type}).\n\n` +
+      `Alert Type: ${alert.type.toUpperCase()}\n` +
+      `Severity: ${alert.severity.toUpperCase()}\n` +
+      `Details: ${alert.message}\n\n` +
+      `Please log into your CAT Rental Customer Portal to manage this equipment or contact your Fleet Manager.\n\n` +
+      `Regards,\nCAT Rental Fleet Management Team`;
+
+    await sendNotification(recipientEmail, subject, message);
+
+    res.json({
+      message: `SMTP Alert successfully sent to ${recipientEmail}`,
+      recipientEmail,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

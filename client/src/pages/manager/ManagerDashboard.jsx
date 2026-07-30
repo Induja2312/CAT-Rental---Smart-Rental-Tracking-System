@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import axios from '../../api/axios';
 import socket from '../../sockets/socket';
@@ -23,6 +24,7 @@ import {
   Fuel,
   Zap,
   Gauge,
+  Settings,
 } from 'lucide-react';
 
 // Default Fallback Dataset (Grounded in Problem Prompt Table)
@@ -143,6 +145,7 @@ const FALLBACK_SITES = [
 ];
 
 export default function ManagerDashboard() {
+  const navigate = useNavigate();
   const { auth, logout } = useAuth();
   const [activeTab, setActiveTab] = useState('map');
   const [equipments, setEquipments] = useState(FALLBACK_EQUIPMENT);
@@ -203,6 +206,39 @@ export default function ManagerDashboard() {
     setActiveTab('map');
   };
 
+  const [operatorActivity, setOperatorActivity] = useState([]);
+
+  const fetchOperatorActivity = async () => {
+    try {
+      const res = await axios.get('/api/operator/fleet-activity');
+      setOperatorActivity(res.data || []);
+    } catch {
+      setOperatorActivity([]);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'operators') {
+      fetchOperatorActivity();
+    }
+  }, [activeTab]);
+
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await axios.get('/api/rentals/export-pdf', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CAT-Rental-Fleet-Report-${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (err) {
+      alert('Failed to generate PDF report. Ensure backend is running.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F4F5] text-zinc-900 flex flex-col font-sans selection:bg-[#FFC500] selection:text-black">
       {/* Enterprise Dark Header Bar */}
@@ -256,6 +292,17 @@ export default function ManagerDashboard() {
                 </span>
               </div>
             </div>
+
+            {auth?.role === 'admin' && (
+              <button
+                onClick={() => navigate('/admin')}
+                className="bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold px-3 py-2 min-h-[44px] rounded transition flex items-center gap-1.5 text-xs uppercase cursor-pointer border-b-2 border-black/20"
+                title="Switch to Admin Control Panel"
+              >
+                <Settings className="w-4 h-4" />
+                <span className="hidden sm:inline">Admin Panel</span>
+              </button>
+            )}
 
             <button
               onClick={logout}
@@ -433,6 +480,17 @@ export default function ManagerDashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('operators')}
+            className={`flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-wider px-5 min-h-[48px] rounded-md transition cursor-pointer ${
+              activeTab === 'operators'
+                ? 'bg-[#FFC500] text-black shadow-sm border-b-2 border-black/30'
+                : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
+            }`}
+          >
+            <UserCheck className="w-4 h-4" /> Operator Monitoring & Underuse
+          </button>
+
+          <button
             onClick={() => setActiveTab('alerts')}
             className={`flex items-center gap-2.5 text-xs font-extrabold uppercase tracking-wider px-5 min-h-[48px] rounded-md transition cursor-pointer ${
               activeTab === 'alerts'
@@ -444,9 +502,17 @@ export default function ManagerDashboard() {
           </button>
 
           <button
+            onClick={handleDownloadPDF}
+            className="ml-auto bg-[#18181b] hover:bg-black text-[#FFC500] font-bold text-xs uppercase px-4 min-h-[48px] rounded-md border border-zinc-800 transition flex items-center gap-2 cursor-pointer shadow"
+            title="Download PDF Fleet Report"
+          >
+            <span>📄 DOWNLOAD PDF REPORT</span>
+          </button>
+
+          <button
             onClick={fetchData}
             disabled={loading}
-            className="ml-auto bg-white hover:bg-zinc-100 text-zinc-700 px-4 min-h-[48px] rounded-md border border-zinc-300 transition flex items-center gap-2 font-mono text-xs cursor-pointer"
+            className="bg-white hover:bg-zinc-100 text-zinc-700 px-4 min-h-[48px] rounded-md border border-zinc-300 transition flex items-center gap-2 font-mono text-xs cursor-pointer"
             title="Refresh Telemetry"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-amber-600' : ''}`} />
@@ -476,6 +542,81 @@ export default function ManagerDashboard() {
           )}
 
           {activeTab === 'analytics' && <UtilizationCharts equipments={equipments} />}
+
+          {activeTab === 'operators' && (
+            <div className="bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-[#FFC500] text-black rounded-md shadow-sm">
+                    <UserCheck className="w-5 h-5 stroke-[2.5]" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
+                      Real-Time Machine Operator Tracking & Time-Wasting Monitor
+                    </h3>
+                    <p className="text-xs text-zinc-500 font-medium">
+                      Cross-references operator clock-in time with engine work vs idle activity to detect intentional underuse
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={fetchOperatorActivity}
+                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-mono font-bold px-3 py-1.5 rounded border border-zinc-300"
+                >
+                  REFRESH OPERATORS
+                </button>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs text-zinc-800">
+                  <thead className="bg-zinc-50 text-zinc-600 uppercase text-[10px] font-mono font-bold border-b border-zinc-200">
+                    <tr>
+                      <th className="py-3 px-4">OPERATOR NAME</th>
+                      <th className="py-3 px-4">CLOCKED MACHINE</th>
+                      <th className="py-3 px-4">STATIONED SITE</th>
+                      <th className="py-3 px-4">CLOCK-IN DURATION</th>
+                      <th className="py-3 px-4">ENGINE RUN</th>
+                      <th className="py-3 px-4">IDLE HOURS</th>
+                      <th className="py-3 px-4">EFFICIENCY INDEX</th>
+                      <th className="py-3 px-4 text-right">TIME-WASTING RISK</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-zinc-200 font-mono">
+                    {operatorActivity.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-8 text-center text-zinc-500 font-sans text-xs">
+                          No active operator clock-ins detected across fleet.
+                        </td>
+                      </tr>
+                    ) : (
+                      operatorActivity.map((op, idx) => (
+                        <tr key={idx} className="hover:bg-zinc-50">
+                          <td className="py-3.5 px-4 font-bold text-zinc-900">{op.operator?.name || 'Operator'}</td>
+                          <td className="py-3.5 px-4 font-black text-amber-600">{op.equipment?.equipmentId} ({op.equipment?.type})</td>
+                          <td className="py-3.5 px-4 font-sans">{op.equipment?.site}</td>
+                          <td className="py-3.5 px-4">{op.clockedHours} HRS</td>
+                          <td className="py-3.5 px-4 text-[#12B76A] font-bold">{op.engineHoursToday} HRS</td>
+                          <td className="py-3.5 px-4 text-[#F79009] font-bold">{op.idleHoursToday} HRS</td>
+                          <td className="py-3.5 px-4 font-black">{op.efficiencyPct}%</td>
+                          <td className="py-3.5 px-4 text-right">
+                            {op.isTimeWasting ? (
+                              <span className="bg-[#FEF2F2] text-[#D92D20] border border-[#FCA5A5] px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
+                                ⚠️ HIGH IDLE / TIME-WASTING
+                              </span>
+                            ) : (
+                              <span className="bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
+                                ✅ NORMAL OPERATING
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
 
           {activeTab === 'alerts' && <AlertFeed sites={sites} />}
         </ErrorBoundary>

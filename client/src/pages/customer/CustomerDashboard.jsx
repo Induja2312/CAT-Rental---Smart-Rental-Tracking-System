@@ -75,6 +75,22 @@ export default function CustomerDashboard() {
     setReqForm({ ...reqForm, startDate: '', endDate: '' });
   };
 
+  const handleDownloadPDF = async () => {
+    try {
+      const response = await api.get('/api/rentals/export-pdf', { responseType: 'blob' });
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `CAT-Rental-Customer-Report-${Date.now()}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch {
+      alert('Failed to generate PDF report.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-[#F4F4F5] text-zinc-900 font-sans selection:bg-[#FFC500] selection:text-black">
       {/* Top Brand Nav */}
@@ -91,7 +107,14 @@ export default function CustomerDashboard() {
           </span>
         </div>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4">
+          <button
+            onClick={handleDownloadPDF}
+            className="bg-black hover:bg-zinc-900 text-[#FFC500] font-bold text-xs uppercase px-3 py-1.5 rounded transition shadow flex items-center gap-1.5 cursor-pointer font-mono"
+            title="Download PDF Rental Report"
+          >
+            <span>📄 DOWNLOAD REPORT</span>
+          </button>
           <div className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-full">
             <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />
             <span className="text-black font-bold text-xs uppercase tracking-wider">Live</span>

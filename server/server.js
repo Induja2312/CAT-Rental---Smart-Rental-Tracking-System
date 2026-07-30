@@ -33,6 +33,7 @@ app.use('/api/telemetry',  require('./routes/telemetry'));
 app.use('/api/alerts',     require('./routes/alerts'));
 app.use('/api/allocation', require('./routes/allocation'));
 app.use('/api/ml',         require('./routes/ml'));
+app.use('/api/operator',   require('./routes/operator'));
 
 const server = http.createServer(app);
 initSocket(server);

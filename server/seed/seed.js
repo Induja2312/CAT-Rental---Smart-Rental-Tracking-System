@@ -51,6 +51,14 @@ const seed = async () => {
     role: 'customer',
   });
 
+  const operatorHash = await bcrypt.hash('operator123', 10);
+  const operator = await User.create({
+    name: 'John Heavy Operator',
+    email: 'operator1@catrentals.com',
+    passwordHash: operatorHash,
+    role: 'operator',
+  });
+
   const equipment = await Equipment.insertMany([
     { equipmentId: 'EQX2001', type: 'Excavator',    siteId: sites[0]._id, status: 'active',      currentLocation: { lat: 37.775, lng: -122.419 } },
     { equipmentId: 'EQX2002', type: 'Bulldozer',    siteId: sites[0]._id, status: 'idle',        currentLocation: { lat: 37.776, lng: -122.420 } },

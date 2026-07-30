@@ -16,108 +16,88 @@ const getMachineTypeLabel = (type) => {
   return { symbol: 'EQ', label: 'EQUIPMENT', icon: '⚙️' };
 };
 
-// Sleek Professional Enterprise Machinery Marker
-const createEquipmentIcon = (type, status, isSelected = false) => {
+// Sleek Compact Equipment Marker Pinpoint
+const createEquipmentIcon = (equipmentId, type, status, isSelected = false) => {
   let statusColor = '#12B76A'; // active green
   if (status === 'idle') statusColor = '#F79009'; // idle amber
   else if (status === 'overdue') statusColor = '#D92D20'; // overdue red
   else if (status === 'unassigned') statusColor = '#71717A'; // unassigned zinc
 
-  const { symbol, icon } = getMachineTypeLabel(type);
-  const strokeWidth = isSelected ? '3' : '2';
-  const strokeColor = isSelected ? '#FFC500' : '#18181b';
-  const shadowFilter = isSelected ? 'drop-shadow(0 0 8px rgba(255, 197, 0, 0.8))' : 'drop-shadow(0 4px 6px rgba(0, 0, 0, 0.25))';
+  const { icon } = getMachineTypeLabel(type);
+  const borderStyle = isSelected ? '2px solid #FFC500' : '1px solid #27272a';
+  const bgStyle = isSelected ? '#000000' : '#18181b';
 
   const html = `
     <div style="
-      position: relative;
-      display: flex;
-      flex-direction: column;
+      display: inline-flex;
       align-items: center;
-      filter: ${shadowFilter};
+      gap: 4px;
+      background: ${bgStyle};
+      color: #ffffff;
+      padding: 2px 6px;
+      border-radius: 12px;
+      border: ${borderStyle};
+      font-family: monospace;
+      font-size: 10px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
       cursor: pointer !important;
-      transition: transform 0.2s ease;
+      transform: ${isSelected ? 'scale(1.15)' : 'scale(1)'};
+      transition: all 0.15s ease;
     ">
-      <!-- Pin Header Badge -->
-      <div style="
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        background: #18181b;
-        color: #ffffff;
-        padding: 4px 8px;
-        border-radius: 4px;
-        border: ${strokeWidth}px solid ${strokeColor};
-        font-family: monospace;
-        font-size: 11px;
-        font-weight: 800;
-        white-space: nowrap;
-        cursor: pointer !important;
-      ">
-        <span style="
-          width: 8px;
-          height: 8px;
-          border-radius: 2px;
-          background: ${statusColor};
-          display: inline-block;
-        "></span>
-        <span>${icon} ${symbol}</span>
-      </div>
-
-      <!-- Pointer Arrow Tip -->
-      <div style="
-        width: 0;
-        height: 0;
-        border-left: 6px solid transparent;
-        border-right: 6px solid transparent;
-        border-top: 7px solid ${strokeColor};
-        margin-top: -1px;
-        cursor: pointer !important;
-      "></div>
+      <span style="
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: ${statusColor};
+        display: inline-block;
+        box-shadow: 0 0 4px ${statusColor};
+      "></span>
+      <span>${icon} ${equipmentId}</span>
     </div>
   `;
 
   return L.divIcon({
     html,
-    className: 'sleek-cat-equipment-marker',
-    iconSize: [80, 40],
-    iconAnchor: [40, 40],
-    popupAnchor: [0, -40],
+    className: 'compact-cat-equipment-marker',
+    iconSize: [60, 22],
+    iconAnchor: [30, 11],
+    popupAnchor: [0, -12],
   });
 };
 
-// Sleek Professional Enterprise Site Radius Badge
+// Sleek Compact Site Marker Pinpoint
 const createSiteIcon = (siteName) => {
-  const shortName = siteName.replace(/Site|\(S\d+\)/gi, '').trim().toUpperCase();
+  const shortName = siteName.replace(/Site|\(S\d+\)/gi, '').trim();
 
   const html = `
     <div style="
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 5px;
-      background: #FFC500;
+      gap: 3px;
+      background: rgba(255, 197, 0, 0.95);
       color: #000000;
-      padding: 5px 10px;
+      padding: 2px 6px;
       border-radius: 4px;
-      font-weight: 900;
-      font-size: 11px;
+      font-weight: 800;
+      font-size: 9px;
       font-family: monospace;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
-      border: 1.5px solid #000000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      border: 1px solid #000000;
       white-space: nowrap;
-      letter-spacing: 0.5px;
       cursor: pointer !important;
     ">
-      <span style="font-size: 12px;">📍</span>
+      <span>📍</span>
       <span>${shortName}</span>
     </div>
   `;
 
   return L.divIcon({
     html,
-    className: 'sleek-cat-site-marker',
-    iconSize: [140, 32],
-    iconAnchor: [70, 16],
+    className: 'compact-cat-site-marker',
+    iconSize: [70, 20],
+    iconAnchor: [35, 10],
   });
 };
 
@@ -288,7 +268,7 @@ export default function MapView({
         const isSelected = selectedMachine?.equipmentId === eq.equipmentId;
 
         const marker = L.marker([lat, lng], {
-          icon: createEquipmentIcon(eq.type, eq.status, isSelected),
+          icon: createEquipmentIcon(eq.equipmentId, eq.type, eq.status, isSelected),
         }).addTo(map);
 
         marker.on('click', () => {

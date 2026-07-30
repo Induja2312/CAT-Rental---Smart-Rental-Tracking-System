@@ -262,6 +262,33 @@ export default function AdminDashboard() {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate('/manager')}
+              className="bg-zinc-800 hover:bg-[#FFC500] hover:text-black text-[#FFC500] font-extrabold text-xs uppercase px-3.5 py-2 min-h-[44px] rounded transition shadow border border-zinc-700 flex items-center gap-1.5 cursor-pointer"
+              title="Switch to Fleet Manager GIS Dashboard"
+            >
+              <span>🚜 FLEET MANAGER MAP</span>
+            </button>
+            <button
+              onClick={async () => {
+                try {
+                  const res = await api.get('/api/rentals/export-pdf', { responseType: 'blob' });
+                  const blob = new Blob([res.data], { type: 'application/pdf' });
+                  const url = window.URL.createObjectURL(blob);
+                  const link = document.createElement('a');
+                  link.href = url;
+                  link.setAttribute('download', `CAT-Admin-Fleet-Report-${Date.now()}.pdf`);
+                  document.body.appendChild(link);
+                  link.click();
+                  link.remove();
+                } catch {
+                  alert('Failed to generate PDF report.');
+                }
+              }}
+              className="bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold text-xs uppercase px-3.5 py-2 min-h-[44px] rounded transition shadow border-b-2 border-black/20 flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>📄 EXPORT PDF</span>
+            </button>
             <div className="hidden lg:flex items-center gap-2 bg-[#121212] border border-zinc-700 px-3 py-1.5 rounded text-xs min-h-[44px]">
               <Settings className="w-4 h-4 text-[#FFC500]" />
               <div>

@@ -1,7 +1,7 @@
 import React from 'react';
 import {
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -11,21 +11,28 @@ import {
   PieChart,
   Pie,
   Cell,
+  BarChart,
+  Bar,
 } from 'recharts';
-import { BarChart3, PieChart as PieIcon, Activity, Clock, Zap } from 'lucide-react';
+import { Activity, PieChart as PieIcon, Clock } from 'lucide-react';
+
+const round2 = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v);
 
 export default function UtilizationCharts({ equipments = [] }) {
   const utilizationData = equipments.map((eq) => {
-    const engineHours = eq.engineHoursToday ?? (eq.status === 'active' ? 7.5 : 1.5);
-    const idleHours = eq.idleHoursToday ?? (eq.status === 'active' ? 1.0 : 8.0);
+    const rawEngine = eq.engineHoursToday ?? (eq.status === 'active' ? 7.5 : 1.5);
+    const rawIdle = eq.idleHoursToday ?? (eq.status === 'active' ? 1.0 : 8.0);
+    const engineHours = round2(rawEngine);
+    const idleHours = round2(rawIdle);
     const total = engineHours + idleHours;
     const ratio = total > 0 ? Math.round((engineHours / total) * 100) : 0;
 
     return {
       name: eq.equipmentId || 'EQX',
       type: eq.type,
-      'Engine Hours': engineHours,
+      'Work Hours (Engine)': engineHours,
       'Idle Hours': idleHours,
+      'Optimal Efficiency Target': 7.5, // Standard benchmark line
       utilizationRatio: ratio,
     };
   });
@@ -53,99 +60,36 @@ export default function UtilizationCharts({ equipments = [] }) {
     };
   });
 
-  const totalEngineHours = utilizationData.reduce((acc, curr) => acc + curr['Engine Hours'], 0);
-  const totalIdleHours = utilizationData.reduce((acc, curr) => acc + curr['Idle Hours'], 0);
-  const avgUtilization =
-    utilizationData.length > 0
-      ? Math.round(
-          utilizationData.reduce((acc, curr) => acc + curr.utilizationRatio, 0) /
-            utilizationData.length
-        )
-      : 0;
-
   return (
     <div className="space-y-6">
-      {/* Metric Telematics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Metric 1 */}
-        <div className="bg-white border border-zinc-200 rounded-md p-4 flex items-center justify-between shadow-sm border-l-4 border-l-[#FFC500]">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-              Total Engine Runtime
-            </p>
-            <h4 className="text-3xl font-black font-mono text-zinc-900 tracking-tight">
-              {totalEngineHours} <span className="text-sm font-sans font-bold text-zinc-500">HRS/DAY</span>
-            </h4>
-            <p className="text-[10px] font-mono text-zinc-500 mt-1 uppercase font-semibold">
-              Across Tracked Fleet
-            </p>
-          </div>
-          <div className="p-3 bg-[#FFC500]/20 border border-[#FFC500] rounded-md text-black">
-            <Zap className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Metric 2 */}
-        <div className="bg-white border border-zinc-200 rounded-md p-4 flex items-center justify-between shadow-sm border-l-4 border-l-[#F79009]">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-              Total Idle Hours
-            </p>
-            <h4 className="text-3xl font-black font-mono text-[#F79009] tracking-tight">
-              {totalIdleHours} <span className="text-sm font-sans font-bold text-zinc-500">HRS/DAY</span>
-            </h4>
-            <p className="text-[10px] font-mono text-[#F79009] mt-1 uppercase font-bold">
-              Potential Reallocation Target
-            </p>
-          </div>
-          <div className="p-3 bg-[#F79009]/10 border border-[#F79009]/30 rounded-md text-[#F79009]">
-            <Clock className="w-6 h-6" />
-          </div>
-        </div>
-
-        {/* Metric 3 */}
-        <div className="bg-white border border-zinc-200 rounded-md p-4 flex items-center justify-between shadow-sm border-l-4 border-l-[#12B76A]">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-wider text-zinc-500">
-              Avg Utilization Benchmark
-            </p>
-            <h4 className="text-3xl font-black font-mono text-[#12B76A] tracking-tight">
-              {avgUtilization}%
-            </h4>
-            <p className="text-[10px] font-mono text-zinc-500 mt-1 uppercase font-semibold">
-              Target Standard: &gt; 65%
-            </p>
-          </div>
-          <div className="p-3 bg-[#12B76A]/10 border border-[#12B76A]/30 rounded-md text-[#12B76A]">
-            <Activity className="w-6 h-6" />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Enterprise Charts Grid */}
+      {/* Main Real-Time Line Graph: Work vs Idle vs Optimal Benchmark */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Stacked Runtime vs Idle Chart */}
         <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-4">
-          <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-200 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-[#FFC500] text-black rounded-md shadow-sm">
-                <BarChart3 className="w-5 h-5 stroke-[2.5]" />
+                <Activity className="w-5 h-5 stroke-[2.5]" />
               </div>
-              <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
-                Daily Telematics Runtime vs Idle Hours
-              </h3>
+              <div>
+                <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
+                  Equipment Telematics — Work vs Idle vs Target Efficiency
+                </h3>
+                <p className="text-xs text-zinc-500 font-medium">
+                  Real-time contrast line chart showing actual work hours against idle hours and standard target benchmark
+                </p>
+              </div>
             </div>
-            <span className="text-xs font-mono font-bold text-zinc-500 bg-zinc-100 px-3 py-1 rounded border border-zinc-200">
-              STACKED TELEMETRY
+            <span className="text-xs font-mono font-bold text-zinc-600 bg-zinc-100 px-3 py-1 rounded border border-zinc-200 shrink-0">
+              TARGET: 7.5 HRS WORK / DAY
             </span>
           </div>
 
-          <div className="h-72 w-full pt-2">
+          <div className="h-80 w-full pt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={utilizationData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <LineChart data={utilizationData} margin={{ top: 15, right: 20, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e4e4e7" />
                 <XAxis dataKey="name" stroke="#52525b" tick={{ fontSize: 11, fontFamily: 'monospace', fontWeight: 'bold' }} />
-                <YAxis stroke="#52525b" tick={{ fontSize: 11, fontFamily: 'monospace' }} label={{ value: 'HOURS', angle: -90, position: 'insideLeft', fill: '#52525b', fontSize: 10, fontWeight: 'bold' }} />
+                <YAxis stroke="#52525b" tick={{ fontSize: 11, fontFamily: 'monospace' }} label={{ value: 'HOURS / DAY', angle: -90, position: 'insideLeft', fill: '#52525b', fontSize: 10, fontWeight: 'bold' }} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: '#ffffff',
@@ -156,15 +100,35 @@ export default function UtilizationCharts({ equipments = [] }) {
                     boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)',
                   }}
                 />
-                <Legend wrapperStyle={{ paddingTop: '10px', fontSize: '12px', fontFamily: 'monospace', fontWeight: 'bold' }} />
-                <Bar dataKey="Engine Hours" stackId="a" fill="#FFC500" radius={[0, 0, 0, 0]} />
-                <Bar dataKey="Idle Hours" stackId="a" fill="#F79009" radius={[2, 2, 0, 0]} />
-              </BarChart>
+                <Legend wrapperStyle={{ paddingTop: '12px', fontSize: '12px', fontFamily: 'monospace', fontWeight: 'bold' }} />
+                <Line
+                  type="monotone"
+                  dataKey="Work Hours (Engine)"
+                  stroke="#FFC500"
+                  strokeWidth={3}
+                  activeDot={{ r: 7 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Idle Hours"
+                  stroke="#F79009"
+                  strokeWidth={3}
+                  activeDot={{ r: 6 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Optimal Efficiency Target"
+                  stroke="#12B76A"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={false}
+                />
+              </LineChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Fleet Alert Status Pie Chart */}
+        {/* Fleet Alert Status Breakdown */}
         <div className="bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-4">
           <div className="flex items-center justify-between border-b border-zinc-200 pb-3">
             <div className="flex items-center gap-3">
@@ -172,7 +136,7 @@ export default function UtilizationCharts({ equipments = [] }) {
                 <PieIcon className="w-5 h-5 stroke-[2.5]" />
               </div>
               <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">
-                Fleet Status Breakdown
+                Fleet Status Distribution
               </h3>
             </div>
           </div>

@@ -179,6 +179,21 @@ export default function AlertFeed({ sites = [] }) {
                 </div>
 
                 <div className="shrink-0 flex items-center gap-2">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await axios.post(`/api/alerts/${alert._id}/notify-customer`);
+                        alert(res.data?.message || 'SMTP Alert email dispatched to customer!');
+                      } catch (err) {
+                        alert(err.response?.data?.message || 'Failed to dispatch SMTP email notification.');
+                      }
+                    }}
+                    className="bg-[#18181b] hover:bg-black text-[#FFC500] font-bold text-xs uppercase tracking-wider px-4 min-h-[48px] rounded transition shadow-sm border border-zinc-700 flex items-center gap-1.5 cursor-pointer"
+                    title="Send SMTP email notification to customer"
+                  >
+                    <span>📧 SMTP NOTIFY</span>
+                  </button>
+
                   {alert.resolved ? (
                     <span className="text-xs font-mono font-bold text-[#12B76A] bg-[#ECFDF5] px-4 min-h-[44px] rounded border border-[#A7F3D0] flex items-center gap-1.5 uppercase">
                       <Check className="w-4 h-4 stroke-[3]" /> RESOLVED

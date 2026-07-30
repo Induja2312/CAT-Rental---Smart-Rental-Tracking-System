@@ -6,6 +6,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import ManagerDashboard from './pages/manager/ManagerDashboard';
 import EquipmentDetail from './pages/manager/EquipmentDetail';
 import CustomerDashboard from './pages/customer/CustomerDashboard';
+import OperatorDashboard from './pages/operator/OperatorDashboard';
 
 export default function App() {
   return (
@@ -36,6 +37,13 @@ export default function App() {
           } />
           <Route path="/customer/*" element={
             <ProtectedRoute role="customer"><CustomerDashboard /></ProtectedRoute>
+          } />
+
+          <Route path="/operator" element={
+            <ProtectedRoute role="operator"><OperatorDashboard /></ProtectedRoute>
+          } />
+          <Route path="/operator/*" element={
+            <ProtectedRoute role="operator"><OperatorDashboard /></ProtectedRoute>
           } />
 
           <Route path="*" element={<Navigate to="/login" replace />} />
