@@ -118,7 +118,7 @@ export default function AllocationPanel({
             </div>
             <div>
               <h4 className="text-sm font-bold text-zinc-900 uppercase tracking-wide">Site Demand Forecast</h4>
-              <p className="text-xs text-zinc-500 font-medium">Predictive Telematics Demand & Fleet Allocation Forecast</p>
+              <p className="text-xs text-zinc-500 font-medium">Machine Learning Telematics Demand & Utilization Prediction</p>
             </div>
           </div>
           {forecast.map((f) => (
