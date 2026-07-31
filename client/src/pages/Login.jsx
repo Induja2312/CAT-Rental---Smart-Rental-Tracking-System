@@ -4,7 +4,7 @@ import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
 import { ArrowRight, Zap, ShieldCheck, Clock, Mail, Lock } from 'lucide-react';
 
-const ROLE_REDIRECT = { admin: '/manager', manager: '/manager', customer: '/customer', operator: '/operator' };
+const ROLE_REDIRECT = { admin: '/admin', manager: '/manager', customer: '/customer', operator: '/operator' };
 
 export default function Login() {
   const { login } = useAuth();
