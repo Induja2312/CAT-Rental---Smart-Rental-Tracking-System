@@ -519,7 +519,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <Navigation className="w-4 h-4" /> Dijkstra Route & Allocation Engine
+            <Navigation className="w-4 h-4" /> Route & Allocation Engine
           </button>
 
           <button

@@ -195,24 +195,30 @@ export default function SiteList() {
             <thead className="bg-zinc-50 text-zinc-600 uppercase text-[10px] font-mono font-bold border-b border-zinc-200">
               <tr>
                 <th className="py-3 px-4">Site Name</th>
-                <th className="py-3 px-4">Latitude</th>
-                <th className="py-3 px-4">Longitude</th>
+                <th className="py-3 px-4">Customer / Submitter</th>
+                <th className="py-3 px-4">Equipment Needed</th>
+                <th className="py-3 px-4">Coordinates (Lat, Lng)</th>
                 <th className="py-3 px-4">Status</th>
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-zinc-200 font-mono">
               {loading ? (
-                <tr><td colSpan={5} className="py-8 text-center text-zinc-500 font-sans text-xs">Loading...</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-zinc-500 font-sans text-xs">Loading...</td></tr>
               ) : sites.length === 0 ? (
-                <tr><td colSpan={5} className="py-8 text-center text-zinc-500 font-sans text-xs">No sites found.</td></tr>
+                <tr><td colSpan={6} className="py-8 text-center text-zinc-500 font-sans text-xs">No sites found.</td></tr>
               ) : sites.map((s) => (
                 <tr key={s._id} className="hover:bg-zinc-50 transition">
                   <td className="py-3.5 px-4 font-bold text-zinc-900 flex items-center gap-2">
                     <MapPin className="w-3.5 h-3.5 text-[#FFC500] shrink-0" />{s.name}
                   </td>
-                  <td className="py-3.5 px-4">{s.location?.lat?.toFixed(4)}</td>
-                  <td className="py-3.5 px-4">{s.location?.lng?.toFixed(4)}</td>
+                  <td className="py-3.5 px-4 font-sans font-medium text-zinc-700">
+                    {s.submittedBy ? `${s.submittedBy.name} (${s.submittedBy.email})` : 'System / Admin'}
+                  </td>
+                  <td className="py-3.5 px-4 font-sans font-semibold text-zinc-800">
+                    {s.equipmentTypeNeeded || '—'}
+                  </td>
+                  <td className="py-3.5 px-4">{s.location?.lat?.toFixed(4)}, {s.location?.lng?.toFixed(4)}</td>
                   <td className="py-3.5 px-4">
                     <span className={`px-2.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${STATUS_STYLE[s.status] || STATUS_STYLE.active}`}>
                       {s.status}

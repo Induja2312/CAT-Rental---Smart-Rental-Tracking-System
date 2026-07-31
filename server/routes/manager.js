@@ -13,7 +13,13 @@ const round2 = (v) => (typeof v === 'number' ? Math.round(v * 100) / 100 : v);
 router.get('/equipment', ...guard, async (req, res) => {
   try {
     const filter = {};
-    if (req.user.role === 'manager') {
+    if (req.query.managerId && req.query.managerId !== 'all') {
+      const User = require('../models/User');
+      const targetMgr = await User.findById(req.query.managerId);
+      if (targetMgr) {
+        filter.siteId = { $in: targetMgr.assignedSites || [] };
+      }
+    } else if (req.user.role === 'manager' && (!req.query.managerId || req.query.managerId === 'current')) {
       filter.siteId = { $in: req.user.assignedSites || [] };
     }
 

@@ -100,7 +100,7 @@ router.get('/sites', ...guard, async (req, res) => {
   try {
     const filter = {};
     if (req.query.status) filter.status = req.query.status;
-    const sites = await Site.find(filter).sort({ name: 1 });
+    const sites = await Site.find(filter).populate('submittedBy', 'name email').sort({ createdAt: -1 });
     res.json(sites);
   } catch (err) {
     res.status(500).json({ message: err.message });

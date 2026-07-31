@@ -67,7 +67,7 @@ export default function DemandForecast() {
             <div>
               <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">Equipment Demand Forecast</h3>
               <p className="text-xs text-zinc-500 font-medium">
-                Moving-average trend for sites relevant to your rentals — heuristic, not ML
+                Predictive Telematics Demand Forecast for Rented Construction Sites
               </p>
             </div>
           </div>
