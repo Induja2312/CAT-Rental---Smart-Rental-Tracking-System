@@ -22,18 +22,24 @@ function haversineDistance(lat1, lng1, lat2, lng2) {
   return Math.round(R * c * 10) / 10;
 }
 
-// Dijkstra Algorithm to find shortest path across sites network
+// Dijkstra Algorithm to find shortest path across construction sites network
 function runDijkstra(sites, startSiteId, targetSiteId) {
   if (!startSiteId || !targetSiteId) {
     return { path: [], totalDistance: 50 };
   }
-  if (startSiteId.toString() === targetSiteId.toString()) {
-    const s = sites.find((x) => x._id.toString() === startSiteId.toString());
-    return { path: [s || { _id: startSiteId, name: 'Current Site' }], totalDistance: 0 };
-  }
+
+  const startIdStr = startSiteId.toString();
+  const targetIdStr = targetSiteId.toString();
 
   const siteMap = new Map();
   sites.forEach((s) => siteMap.set(s._id.toString(), s));
+
+  const startSite = siteMap.get(startIdStr);
+  const targetSite = siteMap.get(targetIdStr);
+
+  if (startIdStr === targetIdStr) {
+    return { path: [startSite || { _id: startSiteId, name: 'Current Site' }], totalDistance: 0 };
+  }
 
   const distances = new Map();
   const previous = new Map();
@@ -44,9 +50,6 @@ function runDijkstra(sites, startSiteId, targetSiteId) {
     distances.set(id, Infinity);
     unvisited.add(id);
   });
-
-  const startIdStr = startSiteId.toString();
-  const targetIdStr = targetSiteId.toString();
 
   distances.set(startIdStr, 0);
 
@@ -67,8 +70,12 @@ function runDijkstra(sites, startSiteId, targetSiteId) {
     unvisited.delete(currentId);
     const currSite = siteMap.get(currentId);
 
+    if (!currSite || !currSite.location) continue;
+
     for (const neighborId of unvisited) {
       const neighborSite = siteMap.get(neighborId);
+      if (!neighborSite || !neighborSite.location) continue;
+
       const edgeWeight = haversineDistance(
         currSite.location.lat,
         currSite.location.lng,
@@ -92,10 +99,14 @@ function runDijkstra(sites, startSiteId, targetSiteId) {
     curr = previous.get(curr);
   }
 
+  if (path.length > 0 && path[0]._id.toString() !== startIdStr && startSite) {
+    path.unshift(startSite);
+  }
+
   const totalDistance = distances.get(targetIdStr);
   return {
-    path,
-    totalDistance: totalDistance === Infinity ? 100 : Math.round(totalDistance * 10) / 10,
+    path: path.length > 0 ? path : [startSite, targetSite].filter(Boolean),
+    totalDistance: totalDistance === Infinity || totalDistance == null ? 100 : Math.round(totalDistance * 10) / 10,
   };
 }
 
