@@ -70,7 +70,7 @@ const seed = async () => {
   // Batch 2: Customer-Rented Fleet (EQX2001 – EQX2007)
   const equipmentBatch2 = await Equipment.insertMany([
     { equipmentId: 'EQX2001', type: 'Excavator',  siteId: sites[0]._id, status: 'active',     currentLocation: { lat: 13.0840, lng: 80.2720 } },
-    { equipmentId: 'EQX2002', type: 'Bulldozer',  siteId: sites[0]._id, status: 'idle',       currentLocation: { lat: 13.0810, lng: 80.2690 } },
+    { equipmentId: 'EQX2002', type: 'Bulldozer',  siteId: sites[0]._id, status: 'overdue',    currentLocation: { lat: 13.0810, lng: 80.2690 } },
     { equipmentId: 'EQX2003', type: 'Crane',      siteId: sites[1]._id, status: 'active',     currentLocation: { lat: 11.0180, lng: 76.9570 } },
     { equipmentId: 'EQX2004', type: 'Loader',     siteId: sites[1]._id, status: 'overdue',    currentLocation: { lat: 11.0200, lng: 76.9600 } },
     { equipmentId: 'EQX2005', type: 'Grader',     siteId: sites[2]._id, status: 'idle',       currentLocation: { lat: 9.9260,  lng: 78.1210 } },
@@ -114,9 +114,9 @@ const seed = async () => {
     {
       equipmentId: equipmentBatch2[1]._id, // EQX2002 (customer fleet)
       customerId: customerInduja._id,
-      checkInDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000),
-      checkOutDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
-      status: 'ongoing'
+      checkInDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      status: 'overdue'
     },
     {
       equipmentId: equipmentBatch1[0]._id, // EQX1001 (site fleet)
