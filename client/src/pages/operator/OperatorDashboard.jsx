@@ -213,7 +213,7 @@ export default function OperatorDashboard() {
                 >
                   {equipmentList.map((eq) => (
                     <option key={eq._id || eq.equipmentId} value={eq.equipmentId}>
-                      🚜 {eq.equipmentId} — {eq.type} ({eq.siteId?.name || 'Depot'})
+                      {eq.equipmentId} — {eq.type} ({eq.siteId?.name || 'Depot'})
                     </option>
                   ))}
                 </select>

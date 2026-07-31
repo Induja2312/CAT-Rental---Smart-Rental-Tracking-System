@@ -5,12 +5,13 @@ const User = require('../models/User');
 const Site = require('../models/Site');
 const Equipment = require('../models/Equipment');
 const Rental = require('../models/Rental');
+const Telemetry = require('../models/Telemetry');
 
 const seed = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   console.log('Connected — wiping collections...');
 
-  await Promise.all([User.deleteMany(), Site.deleteMany(), Equipment.deleteMany(), Rental.deleteMany()]);
+  await Promise.all([User.deleteMany(), Site.deleteMany(), Equipment.deleteMany(), Rental.deleteMany(), Telemetry.deleteMany()]);
 
   // Tamil Nadu Sites
   const sites = await Site.insertMany([
@@ -23,15 +24,40 @@ const seed = async () => {
 
   const passwordHash = await bcrypt.hash('admin123', 10);
   await User.create({
-    name: 'Tamil Nadu Fleet Operations Manager',
+    name: 'Tamil Nadu Fleet Operations Admin',
     email: 'admin@catrentals.com',
     passwordHash,
     role: 'admin',
     assignedSites: sites.map((s) => s._id),
   });
 
-  // Machine Dataset mapped to Tamil Nadu locations (matched with problem sheet EQX1001 - EQX1007)
-  await Equipment.insertMany([
+  const managerHash = await bcrypt.hash('manager123', 10);
+  await User.create({
+    name: 'Tamil Nadu Site Fleet Manager',
+    email: 'manager@catrentals.com',
+    passwordHash: managerHash,
+    role: 'manager',
+    assignedSites: [sites[0]._id, sites[1]._id, sites[2]._id],
+  });
+
+  await User.create({
+    name: 'Rajeswari (North Zone Manager)',
+    email: 'rajeswari@catrentals.com',
+    passwordHash: managerHash,
+    role: 'manager',
+    assignedSites: [sites[0]._id, sites[1]._id],
+  });
+
+  await User.create({
+    name: 'Karthik (South & Central Manager)',
+    email: 'karthik@catrentals.com',
+    passwordHash: managerHash,
+    role: 'manager',
+    assignedSites: [sites[2]._id, sites[3]._id, sites[4]._id],
+  });
+
+  // Batch 1: Site-Assigned Fleet (EQX1001 – EQX1007)
+  const equipmentBatch1 = await Equipment.insertMany([
     { equipmentId: 'EQX1001', type: 'Excavator',  siteId: sites[2]._id, status: 'active',     currentLocation: { lat: 9.9280,  lng: 78.1220 } },
     { equipmentId: 'EQX1002', type: 'Crane',      siteId: null,         status: 'idle',       currentLocation: { lat: 13.0850, lng: 80.2730 } },
     { equipmentId: 'EQX1003', type: 'Bulldozer',  siteId: sites[1]._id, status: 'active',     currentLocation: { lat: 11.0190, lng: 76.9580 } },
@@ -41,25 +67,8 @@ const seed = async () => {
     { equipmentId: 'EQX1007', type: 'Excavator',  siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7900, lng: 78.7010 } },
   ]);
 
-  console.log('Seed complete: 1 Manager/Admin, 5 Tamil Nadu sites, 7 Equipment items');
-  console.log('Login: admin@catrentals.com / admin123');
-  const customerHash = await bcrypt.hash('customer123', 10);
-  const customer = await User.create({
-    name: 'Test Customer',
-    email: 'customer@catrentals.com',
-    passwordHash: customerHash,
-    role: 'customer',
-  });
-
-  const operatorHash = await bcrypt.hash('operator123', 10);
-  const operator = await User.create({
-    name: 'John Heavy Operator',
-    email: 'operator1@catrentals.com',
-    passwordHash: operatorHash,
-    role: 'operator',
-  });
-
-  const equipment = await Equipment.insertMany([
+  // Batch 2: Customer-Rented Fleet (EQX2001 – EQX2007)
+  const equipmentBatch2 = await Equipment.insertMany([
     { equipmentId: 'EQX2001', type: 'Excavator',  siteId: sites[0]._id, status: 'active',     currentLocation: { lat: 13.0840, lng: 80.2720 } },
     { equipmentId: 'EQX2002', type: 'Bulldozer',  siteId: sites[0]._id, status: 'idle',       currentLocation: { lat: 13.0810, lng: 80.2690 } },
     { equipmentId: 'EQX2003', type: 'Crane',      siteId: sites[1]._id, status: 'active',     currentLocation: { lat: 11.0180, lng: 76.9570 } },
@@ -69,27 +78,89 @@ const seed = async () => {
     { equipmentId: 'EQX2007', type: 'Dump Truck', siteId: null,         status: 'unassigned', currentLocation: { lat: 10.7910, lng: 78.7030 } },
   ]);
 
+  const allEquipment = [...equipmentBatch1, ...equipmentBatch2];
+
+  const customerHash = await bcrypt.hash('customer123', 10);
+  const customerInduja = await User.create({
+    name: 'Induja',
+    email: 'indujaee@gmail.com',
+    passwordHash: customerHash,
+    role: 'customer',
+  });
+  const customerTest = await User.create({
+    name: 'Test Customer',
+    email: 'customer@catrentals.com',
+    passwordHash: customerHash,
+    role: 'customer',
+  });
+
+  const operatorHash = await bcrypt.hash('operator123', 10);
+  await User.create({
+    name: 'John Heavy Operator',
+    email: 'operator1@catrentals.com',
+    passwordHash: operatorHash,
+    role: 'operator',
+  });
+
   const now = new Date();
   await Rental.insertMany([
     {
-      equipmentId: equipment[0]._id,
-      customerId: customer._id,
+      equipmentId: equipmentBatch2[0]._id, // EQX2001 (customer fleet)
+      customerId: customerInduja._id,
       checkInDate: new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000),
-      checkOutDate: new Date(now.getTime() + 1 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(now.getTime() + 5 * 24 * 60 * 60 * 1000),
       status: 'ongoing'
     },
     {
-      equipmentId: equipment[1]._id,
-      customerId: customer._id,
-      checkInDate: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
-      checkOutDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      equipmentId: equipmentBatch2[1]._id, // EQX2002 (customer fleet)
+      customerId: customerInduja._id,
+      checkInDate: new Date(now.getTime() - 4 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
       status: 'ongoing'
-    }
+    },
+    {
+      equipmentId: equipmentBatch1[0]._id, // EQX1001 (site fleet)
+      customerId: customerInduja._id,
+      checkInDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(now.getTime() + 4 * 24 * 60 * 60 * 1000),
+      status: 'ongoing'
+    },
+    {
+      equipmentId: equipmentBatch2[0]._id, // EQX2001 for customerTest
+      customerId: customerTest._id,
+      checkInDate: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+      checkOutDate: new Date(now.getTime() + 2 * 24 * 60 * 60 * 1000),
+      status: 'ongoing'
+    },
   ]);
 
-  console.log('Seed complete: 1 admin, 1 customer, 3 sites, 7 equipment, 2 rentals');
-  console.log('Admin Login: admin@catrentals.com / admin123');
-  console.log('Customer Login: customer@catrentals.com / customer123');
+  // Bulk-insert 7 days of backdated historical Telemetry for ALL 14 equipment items
+  const backdatedTelemetry = [];
+  const msPerDay = 86_400_000;
+
+  allEquipment.forEach((eq, index) => {
+    for (let day = 7; day >= 1; day--) {
+      for (const hourOffset of [9, 17]) {
+        const timestamp = new Date(now.getTime() - day * msPerDay + hourOffset * 3600 * 1000);
+        const baseEngine = (7 - day) * 1.1 + (index % 3) * 0.8 + 1.5;
+        const idleHours = 0.5 + (index % 2) * 0.5;
+
+        backdatedTelemetry.push({
+          equipmentId: eq._id,
+          location: eq.currentLocation || { lat: 10.79, lng: 78.70 },
+          engineHoursToday: +baseEngine.toFixed(2),
+          idleHoursToday: +idleHours.toFixed(2),
+          fuelLevel: Math.max(15, 95 - day * 4),
+          engineTemperature: 72 + (index % 3) * 4,
+          timestamp,
+        });
+      }
+    }
+  });
+
+  await Telemetry.insertMany(backdatedTelemetry);
+
+  console.log(`Seed complete: Admin, Managers, Customers, Sites, 14 Equipment assets & ${backdatedTelemetry.length} backdated telemetry records.`);
   await mongoose.disconnect();
 };
 

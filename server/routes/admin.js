@@ -147,17 +147,90 @@ router.delete('/sites/:id', ...guard, async (req, res) => {
   }
 });
 
-// PUT /api/admin/managers/:id/sites — assign sites to a manager
-router.put('/managers/:id/sites', ...guard, async (req, res) => {
+const bcrypt = require('bcryptjs');
+
+// GET /api/admin/users — list all users (managers, customers, admins, operators)
+router.get('/users', ...guard, async (req, res) => {
   try {
-    const { siteIds } = req.body; // array of site ObjectIds
-    const user = await User.findByIdAndUpdate(
-      req.params.id,
-      { assignedSites: siteIds || [] },
-      { new: true }
-    ).populate('assignedSites', 'name location status');
-    if (!user) return res.status(404).json({ message: 'Manager not found' });
+    const filter = {};
+    if (req.query.role && req.query.role !== 'all') {
+      filter.role = req.query.role;
+    }
+    const users = await User.find(filter, '-passwordHash')
+      .populate('assignedSites', 'name location status')
+      .sort({ role: 1, name: 1 });
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/admin/users — create a new manager or customer user
+router.post('/users', ...guard, async (req, res) => {
+  try {
+    const { name, email, password, role, assignedSites } = req.body;
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: 'name, email and password are required' });
+    }
+    const targetRole = role || 'customer';
+    if (!['manager', 'customer'].includes(targetRole)) {
+      return res.status(400).json({ message: 'Role must be manager or customer' });
+    }
+
+    const existing = await User.findOne({ email: email.toLowerCase() });
+    if (existing) {
+      return res.status(409).json({ message: 'User with this email already exists' });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email: email.toLowerCase(),
+      passwordHash,
+      role: targetRole,
+      assignedSites: targetRole === 'manager' ? (assignedSites || []) : [],
+    });
+
+    const populated = await User.findById(user._id, '-passwordHash')
+      .populate('assignedSites', 'name location status');
+
+    res.status(201).json(populated);
+  } catch (err) {
+    res.status(err.code === 11000 ? 409 : 500).json({ message: err.message });
+  }
+});
+
+// PUT /api/admin/users/:id — edit user
+router.put('/users/:id', ...guard, async (req, res) => {
+  try {
+    const { name, email, password, role, assignedSites } = req.body;
+
+    const update = {};
+    if (name) update.name = name;
+    if (email) update.email = email.toLowerCase();
+    if (role && ['manager', 'customer'].includes(role)) update.role = role;
+    if (assignedSites !== undefined) update.assignedSites = assignedSites;
+
+    if (password && password.trim().length > 0) {
+      update.passwordHash = await bcrypt.hash(password, 10);
+    }
+
+    const user = await User.findByIdAndUpdate(req.params.id, update, { new: true, select: '-passwordHash' })
+      .populate('assignedSites', 'name location status');
+
+    if (!user) return res.status(404).json({ message: 'User not found' });
     res.json(user);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// DELETE /api/admin/users/:id — delete user
+router.delete('/users/:id', ...guard, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    if (!user) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: `User ${user.name} deleted successfully` });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

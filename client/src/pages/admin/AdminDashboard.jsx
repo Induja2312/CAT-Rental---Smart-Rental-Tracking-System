@@ -5,10 +5,11 @@ import api from '../../api/axios';
 import EquipmentList from './EquipmentList';
 import CreateEquipmentForm from './CreateEquipmentForm';
 import SiteList from './SiteList';
+import UserList from './UserList';
 import FullMapView from './FullMapView';
 import {
   LogOut, Cpu, Users, MapPin, Package,
-  TrendingUp, AlertTriangle, CheckCircle2, Settings, Map,
+  TrendingUp, AlertTriangle, CheckCircle2, Settings, Map, FileText
 } from 'lucide-react';
 
 function StatCard({ label, value, sub, color, icon: Icon }) {
@@ -270,7 +271,8 @@ export default function AdminDashboard() {
               className="bg-zinc-800 hover:bg-[#FFC500] hover:text-black text-[#FFC500] font-extrabold text-xs uppercase px-3.5 py-2 min-h-[44px] rounded transition shadow border border-zinc-700 flex items-center gap-1.5 cursor-pointer"
               title="Switch to Fleet Manager GIS Dashboard"
             >
-              <span>🚜 FLEET MANAGER MAP</span>
+              <MapPin className="w-3.5 h-3.5" />
+              <span>FLEET MANAGER MAP</span>
             </button>
             <button
               onClick={async () => {
@@ -290,7 +292,8 @@ export default function AdminDashboard() {
               }}
               className="bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold text-xs uppercase px-3.5 py-2 min-h-[44px] rounded transition shadow border-b-2 border-black/20 flex items-center gap-1.5 cursor-pointer"
             >
-              <span>📄 EXPORT PDF</span>
+              <FileText className="w-3.5 h-3.5" />
+              <span>EXPORT PDF</span>
             </button>
             <div className="hidden lg:flex items-center gap-2 bg-[#121212] border border-zinc-700 px-3 py-1.5 rounded text-xs min-h-[44px]">
               <Settings className="w-4 h-4 text-[#FFC500]" />
@@ -382,7 +385,7 @@ export default function AdminDashboard() {
             <Route path="equipment" element={<EquipmentList />} />
             <Route path="equipment/new" element={<CreateEquipmentForm />} />
             <Route path="equipment/:id/edit" element={<CreateEquipmentForm />} />
-            <Route path="users" element={<UsersPanel />} />
+            <Route path="users" element={<UserList />} />
             <Route path="sites" element={<SiteList />} />
             <Route path="map" element={<FullMapView />} />
             <Route path="*" element={<Navigate to="/admin" replace />} />

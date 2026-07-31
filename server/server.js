@@ -5,7 +5,6 @@ const cors = require('cors');
 const connectDB = require('./config/db');
 const { initSocket } = require('./sockets');
 const { startSimulator } = require('./services/telemetrySimulator');
-const { startMLPoller }  = require('./services/mlPoller');
 
 const app = express();
 app.use(cors());
@@ -45,6 +44,5 @@ connectDB().then(() => {
   server.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
     startSimulator(`http://localhost:${PORT}`);
-    startMLPoller();
   });
 });

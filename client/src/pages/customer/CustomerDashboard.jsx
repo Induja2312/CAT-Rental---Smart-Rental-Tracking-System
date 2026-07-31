@@ -15,7 +15,8 @@ import {
   CalendarDays,
   Send,
   Truck,
-  Package
+  Package,
+  FileText
 } from 'lucide-react';
 
 export default function CustomerDashboard() {
@@ -123,7 +124,8 @@ export default function CustomerDashboard() {
             className="bg-black hover:bg-zinc-900 text-[#FFC500] font-bold text-xs uppercase px-3 py-1.5 rounded transition shadow flex items-center gap-1.5 cursor-pointer font-mono"
             title="Download PDF Rental Report"
           >
-            <span>📄 DOWNLOAD REPORT</span>
+            <FileText className="w-3.5 h-3.5" />
+            <span>DOWNLOAD REPORT</span>
           </button>
           <div className="flex items-center gap-2 bg-black/10 px-3 py-1.5 rounded-full">
             <span className="w-2 h-2 rounded-full bg-green-600 animate-pulse" />

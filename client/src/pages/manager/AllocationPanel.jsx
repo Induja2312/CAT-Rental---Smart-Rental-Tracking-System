@@ -14,6 +14,8 @@ import {
 
 export default function AllocationPanel({
   sites = [],
+  equipments = [],
+  managerId = '',
   onSelectDijkstraPath = null,
   onTransferCompleted = null,
 }) {
@@ -33,8 +35,10 @@ export default function AllocationPanel({
   }, []);
 
   useEffect(() => {
-    if (sites.length > 0 && !targetSiteId) {
-      setTargetSiteId(sites[0]._id);
+    if (sites.length > 0) {
+      if (!targetSiteId || !sites.some((s) => s._id === targetSiteId)) {
+        setTargetSiteId(sites[0]._id);
+      }
     }
   }, [sites, targetSiteId]);
 
@@ -46,7 +50,7 @@ export default function AllocationPanel({
 
     try {
       const res = await axios.get('/api/allocation/rank', {
-        params: { siteId: targetSiteId, type: equipmentType },
+        params: { siteId: targetSiteId, type: equipmentType, managerId },
       });
       setRecommendations(res.data.recommendations || []);
       setTargetSiteObj(res.data.targetSite || null);
@@ -67,7 +71,7 @@ export default function AllocationPanel({
 
   useEffect(() => {
     fetchRankings();
-  }, [targetSiteId, equipmentType]);
+  }, [targetSiteId, equipmentType, managerId]);
 
   const handleSelectRecommendation = (rec) => {
     setSelectedRec(rec);
@@ -150,7 +154,7 @@ export default function AllocationPanel({
         </div>
 
         {/* Form Inputs (Strict 48px Touch Targets) */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-zinc-700 mb-1.5">
               Target Construction Site
@@ -162,7 +166,7 @@ export default function AllocationPanel({
             >
               {sites.map((s) => (
                 <option key={s._id} value={s._id}>
-                  📍 {s.name.toUpperCase()} ({s.location?.lat?.toFixed(2)}, {s.location?.lng?.toFixed(2)})
+                  {s.name.toUpperCase()} ({s.location?.lat?.toFixed(2)}, {s.location?.lng?.toFixed(2)})
                 </option>
               ))}
             </select>
@@ -186,17 +190,6 @@ export default function AllocationPanel({
               <option value="Compactor">COMPACTOR</option>
               <option value="Dump Truck">DUMP TRUCK</option>
             </select>
-          </div>
-
-          <div className="flex items-end">
-            <button
-              onClick={fetchRankings}
-              disabled={loading}
-              className="w-full bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold text-xs uppercase tracking-wider min-h-[48px] rounded-md transition shadow flex items-center justify-center gap-2 border-b-2 border-black/20 cursor-pointer disabled:opacity-50"
-            >
-              <Navigation className="w-4 h-4 stroke-[2.5]" />
-              <span>Run Route Optimization</span>
-            </button>
           </div>
         </div>
       </div>
@@ -309,6 +302,7 @@ export default function AllocationPanel({
                 <th className="py-3 px-4">STATIONED SITE</th>
                 <th className="py-3 px-4">STATUS</th>
                 <th className="py-3 px-4">DISTANCE</th>
+                <th className="py-3 px-4">EST. TRANSFER TIME</th>
 
                 <th className="py-3 px-4 text-right">ACTION</th>
               </tr>
@@ -316,7 +310,7 @@ export default function AllocationPanel({
             <tbody className="divide-y divide-zinc-200 font-mono">
               {recommendations.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-center text-zinc-500 font-sans text-xs">
+                  <td colSpan={10} className="py-8 text-center text-zinc-500 font-sans text-xs">
                     {loading ? 'Computing optimal graph paths...' : 'No equipment candidates found.'}
                   </td>
                 </tr>
@@ -349,6 +343,7 @@ export default function AllocationPanel({
                       </span>
                     </td>
                     <td className="py-3.5 px-4 font-bold">{rec.distanceKm} KM</td>
+                    <td className="py-3.5 px-4 font-bold text-blue-600">{rec.estimatedDurationHours} HRS</td>
 
                     <td className="py-3.5 px-4 text-right font-sans">
                       <button

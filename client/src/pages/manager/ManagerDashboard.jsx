@@ -25,6 +25,9 @@ import {
   Zap,
   Gauge,
   Settings,
+  Users,
+  ChevronRight,
+  FileText,
 } from 'lucide-react';
 
 // Default Fallback Dataset (Grounded in Problem Prompt Table)
@@ -99,10 +102,10 @@ const FALLBACK_EQUIPMENT = [
     idleHoursToday: 0.0,
     fuelLevel: 88,
     currentLocation: { lat: 11.6670, lng: 78.1490 },
-    lastOperatorId: { name: 'OP301' },
-    checkInDate: '2025-01-01',
-    checkOutDate: '2025-01-31',
-    rentalDays: 30,
+    lastOperatorId: { name: 'OP108' },
+    checkInDate: '2025-04-10',
+    checkOutDate: '2025-04-25',
+    rentalDays: 15,
   },
   {
     _id: 'eq6',
@@ -110,14 +113,14 @@ const FALLBACK_EQUIPMENT = [
     type: 'Grader',
     siteId: { _id: 'site1', name: 'Chennai Port Hub (S001)', location: { lat: 13.0827, lng: 80.2707 } },
     status: 'idle',
-    engineHoursToday: 3.0,
-    idleHoursToday: 6.0,
-    fuelLevel: 80,
+    engineHoursToday: 1.0,
+    idleHoursToday: 7.0,
+    fuelLevel: 70,
     currentLocation: { lat: 13.0800, lng: 80.2680 },
-    lastOperatorId: { name: 'OP114' },
-    checkInDate: '2025-04-05',
-    checkOutDate: '2025-04-23',
-    rentalDays: 18,
+    lastOperatorId: null,
+    checkInDate: '2025-03-01',
+    checkOutDate: '2025-03-15',
+    rentalDays: 14,
   },
   {
     _id: 'eq7',
@@ -154,6 +157,10 @@ export default function ManagerDashboard() {
   const [socketConnected, setSocketConnected] = useState(false);
   const [selectedDijkstraPath, setSelectedDijkstraPath] = useState(null);
   const [selectedMachine, setSelectedMachine] = useState(FALLBACK_EQUIPMENT[0]);
+
+  // Manager Switcher State
+  const [availableManagers, setAvailableManagers] = useState([]);
+  const [selectedManagerId, setSelectedManagerId] = useState('current');
 
   useEffect(() => {
     const onConnect = () => setSocketConnected(true);
@@ -199,7 +206,42 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchData();
+    // Fetch available managers for switching scope
+    axios.get('/api/manager/list')
+      .then((res) => {
+        const mgrs = res.data || [];
+        setAvailableManagers(mgrs);
+        if (mgrs.length > 0) {
+          const myMgr = mgrs.find(m => m._id === auth?.id || m.email === auth?.email);
+          if (myMgr) {
+            setSelectedManagerId(myMgr._id);
+          } else {
+            setSelectedManagerId(mgrs[0]._id);
+          }
+        }
+      })
+      .catch(() => {});
   }, []);
+
+  // Compute Manager Scope Filtering (Strictly for selected manager)
+  const selectedManagerObj = availableManagers.find((m) => m._id === selectedManagerId) || availableManagers[0];
+
+  const activeAssignedSites = selectedManagerObj?.assignedSites || [];
+
+  const activeSiteIdStrings = activeAssignedSites
+    .map((s) => (typeof s === 'object' ? s._id?.toString() || s.toString() : s?.toString()))
+    .filter(Boolean);
+
+  const displayedEquipments = equipments.filter((eq) => {
+    if (!eq.siteId) return false;
+    const sid = eq.siteId._id?.toString() || eq.siteId?.toString();
+    return activeSiteIdStrings.includes(sid);
+  });
+
+  const displayedSites = sites.filter((site) => {
+    const sid = site._id?.toString();
+    return activeSiteIdStrings.includes(sid);
+  });
 
   const handleSelectTopMachine = (eq) => {
     setSelectedMachine(eq);
@@ -225,7 +267,7 @@ export default function ManagerDashboard() {
 
   const handleDownloadPDF = async () => {
     try {
-      const response = await axios.get('/api/rentals/export-pdf', { responseType: 'blob' });
+      const response = await axios.get(`/api/rentals/export-pdf?managerId=${selectedManagerId}`, { responseType: 'blob' });
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -262,10 +304,34 @@ export default function ManagerDashboard() {
             </div>
           </div>
 
-          {/* Right Status Controls */}
+          {/* Right Status & Manager Scope Controls */}
           <div className="flex items-center gap-3">
+            {/* View As Manager Scope Switcher */}
+            <div className="flex items-center gap-2 bg-[#121212] border border-[#FFC500]/40 px-3 py-1.5 rounded text-xs min-h-[44px]">
+              <Users className="w-4 h-4 text-[#FFC500]" />
+              <div>
+                <span className="text-[9px] font-mono text-zinc-400 uppercase block leading-none mb-0.5">
+                  Manager Scope:
+                </span>
+                <select
+                  value={selectedManagerId}
+                  onChange={(e) => setSelectedManagerId(e.target.value)}
+                  className="bg-[#18181b] text-[#FFC500] font-bold text-xs rounded border border-zinc-700 px-2 py-0.5 focus:border-[#FFC500] focus:outline-none cursor-pointer"
+                >
+                  {availableManagers.map((m) => {
+                    const siteNames = (m.assignedSites || []).map(s => typeof s === 'object' ? s.name?.split(' ')[0] : 'Site').join(', ');
+                    return (
+                      <option key={m._id} value={m._id}>
+                        {m.name} [{siteNames || `${m.assignedSites?.length || 0} Sites`}]
+                      </option>
+                    );
+                  })}
+                </select>
+              </div>
+            </div>
+
             <div
-              className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded border font-mono font-bold uppercase tracking-wider ${
+              className={`hidden md:flex items-center gap-2 text-xs px-3 py-1.5 rounded border font-mono font-bold uppercase tracking-wider ${
                 socketConnected
                   ? 'bg-[#12B76A]/20 border-[#12B76A] text-[#12B76A]'
                   : 'bg-[#F79009]/20 border-[#F79009] text-[#F79009]'
@@ -276,21 +342,9 @@ export default function ManagerDashboard() {
                   socketConnected ? 'bg-[#12B76A] animate-pulse' : 'bg-[#F79009]'
                 }`}
               ></span>
-              <span className="hidden md:inline">
+              <span className="hidden lg:inline">
                 {socketConnected ? 'Primary Node Live' : 'Telematics Standby'}
               </span>
-            </div>
-
-            <div className="hidden lg:flex items-center gap-2 bg-[#121212] border border-zinc-700 px-3 py-1.5 rounded text-xs min-h-[44px]">
-              <UserCheck className="w-4 h-4 text-[#FFC500]" />
-              <div>
-                <span className="font-bold text-white uppercase block leading-none">
-                  {auth?.name || 'Operations Lead'}
-                </span>
-                <span className="text-[10px] font-mono text-zinc-400 uppercase">
-                  Role: {auth?.role || 'manager'}
-                </span>
-              </div>
             </div>
 
             {auth?.role === 'admin' && (
@@ -326,17 +380,17 @@ export default function ManagerDashboard() {
                 TELEMATICS
               </span>
               <h3 className="text-xs font-black text-zinc-900 uppercase tracking-wider">
-                Individual Machinery Live Telematics & Telemetry Bar
+                Machinery Telematics Stream ({displayedEquipments.length} Assets in View)
               </h3>
             </div>
             <span className="text-[10px] font-mono font-bold text-zinc-500 uppercase">
-              Click machine card to view on GIS map
+              Click machine card to locate on GIS map
             </span>
           </div>
 
           {/* Machine-by-Machine Horizontal Telematics Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5 overflow-x-auto pb-1">
-            {equipments.map((eq) => {
+            {displayedEquipments.map((eq) => {
               const isSelected = selectedMachine?.equipmentId === eq.equipmentId;
               const statusColor =
                 eq.status === 'active'
@@ -383,7 +437,7 @@ export default function ManagerDashboard() {
                   </div>
 
                   <div className="text-[9px] font-sans text-zinc-500 bg-white px-1.5 py-0.5 rounded border border-zinc-200 truncate">
-                    📍 {eq.siteId?.name?.split(' ')[0] || 'Depot'}
+                    {eq.siteId?.name?.split(' ')[0] || 'Depot'}
                   </div>
                 </div>
               );
@@ -454,7 +508,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <Navigation className="w-4 h-4" /> GIS Map & Geofence Radius
+            <MapPin className="w-4 h-4" /> GIS Fleet Map & Geofence
           </button>
 
           <button
@@ -465,7 +519,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <Activity className="w-4 h-4" /> Optimal Real-Time Route Finder
+            <Navigation className="w-4 h-4" /> Dijkstra Route & Allocation Engine
           </button>
 
           <button
@@ -476,7 +530,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <BarChart3 className="w-4 h-4" /> Runtime Analytics
+            <BarChart3 className="w-4 h-4" /> Utilization Charts
           </button>
 
           <button
@@ -487,7 +541,7 @@ export default function ManagerDashboard() {
                 : 'bg-white text-zinc-700 hover:bg-zinc-100 border border-zinc-300'
             }`}
           >
-            <UserCheck className="w-4 h-4" /> Operator Monitoring & Underuse
+            <UserCheck className="w-4 h-4" /> Operator Monitoring
           </button>
 
           <button
@@ -506,7 +560,8 @@ export default function ManagerDashboard() {
             className="ml-auto bg-[#18181b] hover:bg-black text-[#FFC500] font-bold text-xs uppercase px-4 min-h-[48px] rounded-md border border-zinc-800 transition flex items-center gap-2 cursor-pointer shadow"
             title="Download PDF Fleet Report"
           >
-            <span>📄 DOWNLOAD PDF REPORT</span>
+            <FileText className="w-4 h-4 text-[#FFC500]" />
+            <span>DOWNLOAD PDF REPORT</span>
           </button>
 
           <button
@@ -524,9 +579,9 @@ export default function ManagerDashboard() {
         <ErrorBoundary>
           {activeTab === 'map' && (
             <MapView
-              equipments={equipments}
-              sites={sites}
-              assignedSiteIds={auth?.assignedSites?.map(String) || []}
+              equipments={displayedEquipments}
+              sites={displayedSites}
+              assignedSiteIds={activeSiteIdStrings}
               selectedDijkstraPath={selectedDijkstraPath}
               selectedMachine={selectedMachine}
               onSelectMachine={(m) => setSelectedMachine(m)}
@@ -536,13 +591,15 @@ export default function ManagerDashboard() {
 
           {activeTab === 'allocation' && (
             <AllocationPanel
-              sites={sites}
+              sites={displayedSites}
+              equipments={displayedEquipments}
+              managerId={selectedManagerId}
               onSelectDijkstraPath={(path) => setSelectedDijkstraPath(path)}
               onTransferCompleted={fetchData}
             />
           )}
 
-          {activeTab === 'analytics' && <UtilizationCharts equipments={equipments} />}
+          {activeTab === 'analytics' && <UtilizationCharts equipments={displayedEquipments} />}
 
           {activeTab === 'operators' && (
             <div className="bg-white border border-zinc-200 rounded-md p-5 shadow-sm space-y-4">
@@ -560,72 +617,58 @@ export default function ManagerDashboard() {
                     </p>
                   </div>
                 </div>
-                <button
-                  onClick={fetchOperatorActivity}
-                  className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 text-xs font-mono font-bold px-3 py-1.5 rounded border border-zinc-300"
-                >
-                  REFRESH OPERATORS
-                </button>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs text-zinc-800">
-                  <thead className="bg-zinc-50 text-zinc-600 uppercase text-[10px] font-mono font-bold border-b border-zinc-200">
+                <table className="w-full text-left text-xs text-zinc-800 font-mono">
+                  <thead className="bg-zinc-50 text-zinc-600 uppercase text-[10px] font-bold border-b border-zinc-200">
                     <tr>
-                      <th className="py-3 px-4">OPERATOR NAME</th>
-                      <th className="py-3 px-4">CLOCKED MACHINE</th>
-                      <th className="py-3 px-4">STATIONED SITE</th>
-                      <th className="py-3 px-4">CLOCK-IN DURATION</th>
-                      <th className="py-3 px-4">ENGINE RUN</th>
-                      <th className="py-3 px-4">IDLE HOURS</th>
-                      <th className="py-3 px-4">EFFICIENCY INDEX</th>
-                      <th className="py-3 px-4 text-right">TIME-WASTING RISK</th>
+                      <th className="py-3 px-4">Operator Name</th>
+                      <th className="py-3 px-4">Assigned Machine</th>
+                      <th className="py-3 px-4">Stationed Site</th>
+                      <th className="py-3 px-4">Engine Work</th>
+                      <th className="py-3 px-4">Idle Time</th>
+                      <th className="py-3 px-4">Status / Alert Flag</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-zinc-200 font-mono">
-                    {operatorActivity.length === 0 ? (
-                      <tr>
-                        <td colSpan={8} className="py-8 text-center text-zinc-500 font-sans text-xs">
-                          No active operator clock-ins detected across fleet.
-                        </td>
-                      </tr>
-                    ) : (
-                      operatorActivity.map((op, idx) => (
-                        <tr key={idx} className="hover:bg-zinc-50">
-                          <td className="py-3.5 px-4 font-bold text-zinc-900">{op.operator?.name || 'Operator'}</td>
-                          <td className="py-3.5 px-4 font-black text-amber-600">{op.equipment?.equipmentId} ({op.equipment?.type})</td>
-                          <td className="py-3.5 px-4 font-sans">{op.equipment?.site}</td>
-                          <td className="py-3.5 px-4">{op.clockedHours} HRS</td>
-                          <td className="py-3.5 px-4 text-[#12B76A] font-bold">{op.engineHoursToday} HRS</td>
-                          <td className="py-3.5 px-4 text-[#F79009] font-bold">{op.idleHoursToday} HRS</td>
-                          <td className="py-3.5 px-4 font-black">{op.efficiencyPct}%</td>
-                          <td className="py-3.5 px-4 text-right">
-                            {op.isTimeWasting ? (
-                              <span className="bg-[#FEF2F2] text-[#D92D20] border border-[#FCA5A5] px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider animate-pulse">
-                                ⚠️ HIGH IDLE / TIME-WASTING
+                  <tbody className="divide-y divide-zinc-200">
+                    {displayedEquipments.map((eq) => {
+                      const isSlacking = (eq.idleHoursToday || 0) > (eq.engineHoursToday || 0) * 2;
+                      return (
+                        <tr key={eq._id || eq.equipmentId} className="hover:bg-zinc-50 transition">
+                          <td className="py-3 px-4 font-bold text-zinc-900">
+                            {eq.lastOperatorId?.name || 'John Heavy Operator'}
+                          </td>
+                          <td className="py-3 px-4 font-black">{eq.equipmentId} ({eq.type})</td>
+                          <td className="py-3 px-4 text-zinc-600">{eq.siteId?.name || 'Main Depot'}</td>
+                          <td className="py-3 px-4 font-bold text-[#12B76A]">{eq.engineHoursToday ?? 4} hrs</td>
+                          <td className="py-3 px-4 font-bold text-[#F79009]">{eq.idleHoursToday ?? 2} hrs</td>
+                          <td className="py-3 px-4">
+                            {isSlacking ? (
+                              <span className="bg-[#FEF2F2] text-[#B91C1C] border border-[#FCA5A5] px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 w-fit">
+                                <AlertTriangle className="w-3 h-3" /> Slacking Alert
                               </span>
                             ) : (
-                              <span className="bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] px-2.5 py-1 rounded text-[10px] font-bold uppercase tracking-wider">
-                                ✅ NORMAL OPERATING
+                              <span className="bg-[#ECFDF5] text-[#047857] border border-[#A7F3D0] px-2 py-0.5 rounded text-[10px] font-bold uppercase flex items-center gap-1 w-fit">
+                                <CheckCircle2 className="w-3 h-3" /> Normal Shift
                               </span>
                             )}
                           </td>
                         </tr>
-                      ))
-                    )}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
           )}
 
-          {activeTab === 'alerts' && <AlertFeed sites={sites} />}
+          {activeTab === 'alerts' && <AlertFeed sites={displayedSites} equipments={displayedEquipments} />}
         </ErrorBoundary>
       </main>
 
-      {/* Enterprise Footer */}
-      <footer className="bg-white border-t border-zinc-200 py-4 text-center text-xs font-mono text-zinc-500 uppercase tracking-widest">
-        CAT RENTALS ENTERPRISE TELEMATICS • GLOBAL REGION • OPTIMAL ROUTE ESTIMATOR
+      <footer className="bg-white border-t border-zinc-200 py-4 text-center text-xs font-mono text-zinc-500 uppercase tracking-widest mt-auto">
+        CAT RENTALS — ENTERPRISE FLEET TRACKING SYSTEM
       </footer>
     </div>
   );

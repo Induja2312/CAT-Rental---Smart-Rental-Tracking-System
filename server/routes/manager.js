@@ -72,4 +72,16 @@ router.get('/sessions/:equipmentId', ...guard, async (req, res) => {
   }
 });
 
+// GET /api/manager/list — list available managers and their assigned sites
+router.get('/list', ...guard, async (req, res) => {
+  try {
+    const User = require('../models/User');
+    const managers = await User.find({ role: 'manager' }, 'name email assignedSites')
+      .populate('assignedSites', 'name location status');
+    res.json(managers);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

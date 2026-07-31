@@ -49,7 +49,7 @@ export default function RequestSite() {
           <div style="display:inline-flex;align-items:center;justify-content:center;
             background:#18181b;color:#FFC500;width:24px;height:24px;border-radius:50%;
             border:2px solid #FFC500;box-shadow:0 2px 6px rgba(0,0,0,.3);">
-            📍
+            <span style="width:8px;height:8px;border-radius:50%;background:#FFC500;display:inline-block;"></span>
           </div>`;
         const icon = L.divIcon({ html, className: 'custom-pin', iconSize: [24, 24], iconAnchor: [12, 12] });
         markerRef.current = L.marker(e.latlng, { icon }).addTo(map);

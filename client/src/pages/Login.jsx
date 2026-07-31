@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { ArrowRight, Zap, ShieldCheck, Clock } from 'lucide-react';
+import { ArrowRight, Zap, ShieldCheck, Clock, Mail, Lock } from 'lucide-react';
 
 const ROLE_REDIRECT = { admin: '/manager', manager: '/manager', customer: '/customer', operator: '/operator' };
 
@@ -10,17 +10,25 @@ export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState('');
+  const [emailInput, setEmailInput] = useState('indujaee@gmail.com');
+  const [passwordInput, setPasswordInput] = useState('customer123');
+
   const handleLoginClick = async (email, password) => {
     setError('');
     try {
       const { data } = await api.post('/api/auth/login', { email, password });
       login(data);
       setTimeout(() => {
-        navigate(ROLE_REDIRECT[data.role] || '/manager');
+        navigate(ROLE_REDIRECT[data.role] || '/customer');
       }, 50);
     } catch (err) {
       setError(err.response?.data?.message || 'Server offline — cannot login');
     }
+  };
+
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    handleLoginClick(emailInput, passwordInput);
   };
 
   return (
@@ -39,7 +47,7 @@ export default function Login() {
               CAT Rentals Portal
             </h1>
             <p className="text-xs text-zinc-500 font-medium mt-1">
-              Role-Based Access Login
+              Customer & Fleet Management Portal Login
             </p>
           </div>
         </div>
@@ -50,29 +58,65 @@ export default function Login() {
           </div>
         )}
 
-        <div className="space-y-3 pt-1">
+        {/* Manual Login Form */}
+        <form onSubmit={handleFormSubmit} className="space-y-4">
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
+              <input
+                type="email"
+                required
+                value={emailInput}
+                onChange={(e) => setEmailInput(e.target.value)}
+                placeholder="indujaee@gmail.com"
+                className="w-full pl-9 pr-3 py-2 border border-zinc-300 rounded text-sm focus:outline-none focus:border-[#FFC500] focus:ring-2 focus:ring-[#FFC500]/30 font-medium"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-700 uppercase mb-1">
+              Password
+            </label>
+            <div className="relative">
+              <Lock className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
+              <input
+                type="password"
+                required
+                value={passwordInput}
+                onChange={(e) => setPasswordInput(e.target.value)}
+                placeholder="••••••••"
+                className="w-full pl-9 pr-3 py-2 border border-zinc-300 rounded text-sm focus:outline-none focus:border-[#FFC500] focus:ring-2 focus:ring-[#FFC500]/30 font-medium"
+              />
+            </div>
+          </div>
+
           <button
-            type="button"
-            onClick={() => handleLoginClick('admin@catrentals.com', 'admin123')}
+            type="submit"
             className="w-full bg-[#FFC500] hover:bg-[#e6b000] text-black font-extrabold text-xs min-h-[48px] uppercase tracking-wider rounded-md transition shadow flex items-center justify-center gap-2 cursor-pointer border-b-2 border-black/20"
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Login as Super Admin</span>
+            <span>SIGN IN TO PORTAL</span>
+            <ArrowRight className="w-4 h-4 stroke-[3]" />
           </button>
+        </form>
 
+        <div className="relative flex py-1 items-center">
+          <div className="flex-grow border-t border-zinc-200"></div>
+          <span className="flex-shrink mx-3 text-[10px] font-mono font-bold text-zinc-400 uppercase">
+            OR QUICK DEMO LOGIN
+          </span>
+          <div className="flex-grow border-t border-zinc-200"></div>
+        </div>
+
+        {/* Quick Role Shortcuts */}
+        <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            onClick={() => handleLoginClick('admin@catrentals.com', 'admin123')}
-            className="w-full bg-zinc-900 hover:bg-black text-[#FFC500] font-bold text-xs min-h-[48px] uppercase tracking-wider rounded-md border border-zinc-800 transition shadow flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <Zap className="w-4 h-4 fill-[#FFC500]" />
-            <span>Login as Fleet Manager</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleLoginClick('customer@catrentals.com', 'customer123')}
-            className="w-full bg-white hover:bg-zinc-50 text-zinc-800 font-bold text-xs min-h-[48px] uppercase tracking-wider rounded-md border border-zinc-300 transition shadow flex items-center justify-center gap-2 cursor-pointer"
+            onClick={() => handleLoginClick('indujaee@gmail.com', 'customer123')}
+            className="bg-zinc-900 hover:bg-black text-[#FFC500] font-bold text-xs min-h-[44px] uppercase tracking-wider rounded transition shadow flex items-center justify-center gap-1.5 cursor-pointer col-span-2 border border-zinc-800"
           >
             <ArrowRight className="w-4 h-4" />
             <span>Login as Customer</span>
@@ -80,11 +124,20 @@ export default function Login() {
 
           <button
             type="button"
-            onClick={() => handleLoginClick('operator1@catrentals.com', 'operator123')}
-            className="w-full bg-amber-50 hover:bg-amber-100 text-amber-900 font-bold text-xs min-h-[48px] uppercase tracking-wider rounded-md border border-amber-300 transition shadow flex items-center justify-center gap-2 cursor-pointer"
+            onClick={() => handleLoginClick('admin@catrentals.com', 'admin123')}
+            className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-[11px] min-h-[42px] uppercase tracking-wider rounded border border-zinc-300 transition flex items-center justify-center gap-1 cursor-pointer"
           >
-            <Clock className="w-4 h-4 text-amber-700" />
-            <span>Login as Machine Operator</span>
+            <ShieldCheck className="w-3.5 h-3.5" />
+            <span>Super Admin</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleLoginClick('manager@catrentals.com', 'manager123')}
+            className="bg-zinc-100 hover:bg-zinc-200 text-zinc-800 font-bold text-[11px] min-h-[42px] uppercase tracking-wider rounded border border-zinc-300 transition flex items-center justify-center gap-1 cursor-pointer"
+          >
+            <Zap className="w-3.5 h-3.5 fill-black" />
+            <span>Fleet Manager</span>
           </button>
         </div>
       </div>

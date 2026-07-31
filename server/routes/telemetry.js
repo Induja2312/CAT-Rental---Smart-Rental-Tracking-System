@@ -30,7 +30,11 @@ setInterval(async () => {
       }
     }
   } catch (err) {
-    console.warn('ML Service unreachable, skipping batch:', err.message);
+    if (err.code === 'ECONNREFUSED' || err.code === 'ETIMEDOUT' || err.message?.includes('timeout')) {
+      console.warn('ML Service unreachable, skipping batch:', err.message);
+    } else {
+      console.error('ML batch processing error:', err.message);
+    }
   }
 }, 30000);
 
@@ -170,11 +174,26 @@ router.get('/latest', async (req, res) => {
   }
 });
 
+const Rental = require('../models/Rental');
+const { requireAuth } = require('../middleware/auth');
+
 // GET /api/telemetry/:equipmentId — last N records for one equipment
-router.get('/:equipmentId', async (req, res) => {
+router.get('/:equipmentId', requireAuth, async (req, res) => {
   try {
     const equipment = await Equipment.findOne({ equipmentId: req.params.equipmentId });
-    if (!equipment) return res.status(404).json({ message: 'Not found' });
+    if (!equipment) return res.status(404).json({ message: 'Equipment not found' });
+
+    // Customer role authorization check: customer can view equipment they rent
+    if (req.user.role === 'customer') {
+      const activeRental = await Rental.findOne({
+        customerId: req.user.id,
+        equipmentId: equipment._id,
+      });
+      if (!activeRental) {
+        return res.status(403).json({ message: 'Access denied. You do not have an active rental for this equipment.' });
+      }
+    }
+
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const records = await Telemetry.find({ equipmentId: equipment._id })
       .sort({ timestamp: -1 })

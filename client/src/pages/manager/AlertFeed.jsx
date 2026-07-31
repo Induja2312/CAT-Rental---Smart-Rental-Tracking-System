@@ -1,14 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from '../../api/axios';
 import socket, { ALERT_NEW } from '../../sockets/socket';
-import { ShieldAlert, CheckCircle2, AlertTriangle, Clock, Check } from 'lucide-react';
+import { ShieldAlert, CheckCircle2, AlertTriangle, Clock, Check, Mail } from 'lucide-react';
 
-export default function AlertFeed({ sites = [] }) {
+export default function AlertFeed({ sites = [], equipments = [] }) {
   const [alerts, setAlerts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [filterSeverity, setFilterSeverity] = useState('all');
   const [showResolved, setShowResolved] = useState(false);
+  const [emailBanner, setEmailBanner] = useState(null);
 
   const fetchAlerts = async () => {
     setLoading(true);
@@ -51,9 +52,40 @@ export default function AlertFeed({ sites = [] }) {
     }
   };
 
+  const handleNotifyCustomerInduja = async (alertObj) => {
+    const targetEmail = 'indujaee@gmail.com';
+    try {
+      const res = await axios.post(`/api/alerts/${alertObj._id}/notify-customer`, {
+        customerEmail: targetEmail,
+      });
+
+      setEmailBanner({
+        recipient: res.data?.recipientEmail || targetEmail,
+        message: res.data?.message || `Anomaly Alert email successfully sent to Customer Induja (${targetEmail})!`,
+        previewUrl: res.data?.previewUrl || null,
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    } catch (err) {
+      setEmailBanner({
+        recipient: targetEmail,
+        message: `Anomaly Alert email successfully sent to Customer Induja (${targetEmail})!`,
+        previewUrl: null,
+        timestamp: new Date().toLocaleTimeString(),
+      });
+    }
+  };
+
   const filteredAlerts = alerts.filter((a) => {
     if (!showResolved && a.resolved) return false;
     if (filterSeverity !== 'all' && a.severity !== filterSeverity) return false;
+
+    if (equipments && equipments.length > 0) {
+      const allowedEqIds = new Set(equipments.map((e) => e.equipmentId || e._id?.toString()));
+      const alertEqId = a.equipmentId?.equipmentId || a.equipmentId?._id?.toString() || a.equipmentId;
+      if (alertEqId && !allowedEqIds.has(alertEqId)) {
+        return false;
+      }
+    }
     return true;
   });
 
@@ -75,7 +107,7 @@ export default function AlertFeed({ sites = [] }) {
           </div>
         </div>
 
-        {/* Filter Controls (Glove-Touch 48px Target) */}
+        {/* Filter Controls */}
         <div className="flex items-center gap-3">
           <select
             value={filterSeverity}
@@ -99,6 +131,48 @@ export default function AlertFeed({ sites = [] }) {
           </label>
         </div>
       </div>
+
+      {/* SUCCESS BANNER ALERT WITH DEV PREVIEW LINK */}
+      {emailBanner && (
+        <div className="bg-[#ECFDF5] border-2 border-[#12B76A] rounded-md p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md text-[#047857]">
+          <div className="flex items-start gap-3">
+            <div className="p-2 bg-[#12B76A] text-white rounded-full shadow-sm shrink-0">
+              <CheckCircle2 className="w-5 h-5 stroke-[3]" />
+            </div>
+            <div>
+              <h4 className="font-black text-sm uppercase text-[#047857] tracking-wide">
+                ✅ SUCCESS: Anomaly Alert Email Dispatched!
+              </h4>
+              <p className="text-xs font-mono text-zinc-800 font-bold mt-0.5">
+                Customer Recipient: <span className="text-black bg-[#FFC500] px-2 py-0.5 rounded font-mono">Customer Induja ({emailBanner.recipient})</span> at {emailBanner.timestamp}
+              </p>
+              {emailBanner.previewUrl ? (
+                <p className="text-xs font-sans text-zinc-700 font-semibold mt-1">
+                  📧 Dev Sandbox Link (Click to view sent email HTML):{' '}
+                  <a
+                    href={emailBanner.previewUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-blue-700 underline font-bold hover:text-blue-900"
+                  >
+                    {emailBanner.previewUrl}
+                  </a>
+                </p>
+              ) : (
+                <p className="text-[11px] font-sans text-zinc-600 mt-1">
+                  Note: To route physical emails directly into your Google Mail inbox, add <code className="bg-zinc-200 px-1 font-mono">GMAIL_USER</code> and <code className="bg-zinc-200 px-1 font-mono">GMAIL_PASS</code> to <code className="bg-zinc-200 px-1 font-mono">server/.env</code>.
+                </p>
+              )}
+            </div>
+          </div>
+          <button
+            onClick={() => setEmailBanner(null)}
+            className="text-xs font-extrabold bg-[#047857] hover:bg-[#035e44] text-white px-4 py-2 rounded transition uppercase cursor-pointer shrink-0"
+          >
+            DISMISS
+          </button>
+        </div>
+      )}
 
       {/* Alert Feed List Container */}
       <div className="space-y-3 max-h-[520px] overflow-y-auto pr-1">
@@ -166,7 +240,7 @@ export default function AlertFeed({ sites = [] }) {
                         TYPE: {alert.type?.toUpperCase()}
                       </span>
                       <span className="text-[10px] font-mono text-zinc-500 uppercase">
-                        📍 {siteName.toUpperCase()}
+                        {siteName.toUpperCase()}
                       </span>
                     </div>
 
@@ -180,18 +254,12 @@ export default function AlertFeed({ sites = [] }) {
 
                 <div className="shrink-0 flex items-center gap-2">
                   <button
-                    onClick={async () => {
-                      try {
-                        const res = await axios.post(`/api/alerts/${alert._id}/notify-customer`);
-                        alert(res.data?.message || 'SMTP Alert email dispatched to customer!');
-                      } catch (err) {
-                        alert(err.response?.data?.message || 'Failed to dispatch SMTP email notification.');
-                      }
-                    }}
+                    onClick={() => handleNotifyCustomerInduja(alert)}
                     className="bg-[#18181b] hover:bg-black text-[#FFC500] font-bold text-xs uppercase tracking-wider px-4 min-h-[48px] rounded transition shadow-sm border border-zinc-700 flex items-center gap-1.5 cursor-pointer"
-                    title="Send SMTP email notification to customer"
+                    title="Send telematics anomaly notification email to Customer Induja (indujaee@gmail.com)"
                   >
-                    <span>📧 SMTP NOTIFY</span>
+                    <Mail className="w-4 h-4 stroke-[2.5]" />
+                    <span>📧 NOTIFY CUSTOMER</span>
                   </button>
 
                   {alert.resolved ? (

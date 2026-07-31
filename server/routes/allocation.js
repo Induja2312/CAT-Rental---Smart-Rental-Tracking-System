@@ -110,16 +110,30 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
       return res.status(404).json({ message: 'No construction sites found' });
     }
 
-    // For managers: scope to their assignedSites only
+    // Fleet Manager scope filtering
     let visibleSites = sites;
-    if (req.user.role === 'manager') {
+    let targetSites = sites;
+    const User = require('../models/User');
+
+    if (req.query.managerId && req.query.managerId !== 'all') {
+      let mgr = null;
+      if (req.query.managerId === 'current') {
+        mgr = await User.findById(req.user.id);
+      } else {
+        mgr = await User.findById(req.query.managerId);
+      }
+      if (mgr) {
+        const assignedSet = new Set((mgr.assignedSites || []).map(String));
+        visibleSites = sites.filter((s) => assignedSet.has(s._id.toString()));
+      }
+    } else if (req.user.role === 'manager') {
       const assignedSet = new Set((req.user.assignedSites || []).map(String));
       visibleSites = sites.filter((s) => assignedSet.has(s._id.toString()));
     }
 
     let targetSite = visibleSites.find((s) => s._id.toString() === siteId);
     if (!targetSite) {
-      targetSite = visibleSites[0];
+      targetSite = visibleSites[0] || sites[0];
     }
 
     const eqFilter = {};
@@ -127,7 +141,17 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
       eqFilter.type = new RegExp(type, 'i');
     }
     
-    if (req.user.role === 'manager') {
+    if (req.query.managerId && req.query.managerId !== 'all') {
+      let mgr = null;
+      if (req.query.managerId === 'current') {
+        mgr = await User.findById(req.user.id);
+      } else {
+        mgr = await User.findById(req.query.managerId);
+      }
+      if (mgr) {
+        eqFilter.siteId = { $in: mgr.assignedSites || [] };
+      }
+    } else if (req.user.role === 'manager') {
       eqFilter.siteId = { $in: req.user.assignedSites || [] };
     }
 
@@ -185,7 +209,8 @@ router.get('/rank', requireAuth, requireRole('manager', 'admin'), async (req, re
       const rawScore = w1 * distScoreFactor + w2 * (1 - currentUtilization) + w3 * isAvailable;
       const score = Math.round(rawScore * 1000) / 1000;
 
-      const estimatedDurationHours = Math.round((distanceKm / 50) * 10) / 10;
+      // Heavy haulage transport speed: ~20 km/h (400 km takes 15 to 25 hours of non-stop heavy transit)
+      const estimatedDurationHours = distanceKm === 0 ? 0 : Math.round((distanceKm / 20) * 10) / 10;
       const estimatedCostUsd = Math.round(distanceKm * 4.5);
 
       return {

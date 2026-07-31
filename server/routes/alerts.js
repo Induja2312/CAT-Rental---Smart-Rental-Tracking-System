@@ -104,23 +104,45 @@ router.post('/:id/notify-customer', requireAuth, async (req, res) => {
       status: { $in: ['ongoing', 'overdue'] },
     }).populate('customerId', 'name email');
 
-    const recipientEmail = activeRental?.customerId?.email || req.body.customerEmail || 'customer@catrentals.com';
-    const recipientName = activeRental?.customerId?.name || 'Valued Customer';
+    const recipientEmail = activeRental?.customerId?.email || req.body.customerEmail || 'indujaee@gmail.com';
+    const recipientName = activeRental?.customerId?.name || 'Induja';
 
-    const subject = `[CAT Rental Alert] Telematics Notification for ${alert.equipmentId.equipmentId}`;
+    const subject = `[CAT Rental Anomaly Alert] Telematics Notification for ${alert.equipmentId.equipmentId}`;
     const message = `Hello ${recipientName},\n\n` +
-      `This is an automated telematics alert regarding equipment ${alert.equipmentId.equipmentId} (${alert.equipmentId.type}).\n\n` +
-      `Alert Type: ${alert.type.toUpperCase()}\n` +
-      `Severity: ${alert.severity.toUpperCase()}\n` +
-      `Details: ${alert.message}\n\n` +
-      `Please log into your CAT Rental Customer Portal to manage this equipment or contact your Fleet Manager.\n\n` +
-      `Regards,\nCAT Rental Fleet Management Team`;
+      `We have detected a telematics anomaly / operational alert on your rented CAT equipment (${alert.equipmentId.equipmentId} - ${alert.equipmentId.type}):\n\n` +
+      `• Anomaly Type: ${alert.type.toUpperCase()}\n` +
+      `• Severity Level: ${alert.severity.toUpperCase()}\n` +
+      `• Details: ${alert.message}\n\n` +
+      `Please log into your CAT Customer Portal to review equipment telematics or contact your Fleet Manager.\n\n` +
+      `Regards,\nCAT Rental Telematics & Fleet Operations Team`;
 
-    await sendNotification(recipientEmail, subject, message);
+    const result = await sendNotification(recipientEmail, subject, message);
 
     res.json({
-      message: `SMTP Alert successfully sent to ${recipientEmail}`,
+      success: true,
+      message: `Anomaly Alert email successfully sent to Customer ${recipientName} (${recipientEmail})!`,
       recipientEmail,
+      previewUrl: result.previewUrl || null,
+    });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// POST /api/alerts/send-mail — Direct test email endpoint targeting indujaee@gmail.com
+router.post('/send-mail', requireAuth, async (req, res) => {
+  try {
+    const recipientEmail = req.body.email || 'indujaee@gmail.com';
+    const subject = req.body.subject || '[CAT Rental] Telematics Fleet Status Alert';
+    const message = req.body.message || 'Hi Induja,\n\nThis is an official telematics update from CAT Rental Tracking System.\n\nAll machinery operating within safe parameters.\n\n— CAT Rental Operations Team';
+
+    const result = await sendNotification(recipientEmail, subject, message);
+
+    res.json({
+      success: true,
+      message: `Email successfully sent to ${recipientEmail}!`,
+      recipientEmail,
+      previewUrl: result.previewUrl || null,
     });
   } catch (err) {
     res.status(500).json({ message: err.message });

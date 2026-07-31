@@ -4,70 +4,94 @@ import L from 'leaflet';
 import socket, { TELEMETRY_UPDATE, EQUIPMENT_STATUS } from '../../sockets/socket';
 import { Navigation } from 'lucide-react';
 
-// ── icon helpers ─────────────────────────────────────────────────────────────
+// Machine category labels
 const getMachineTypeLabel = (type) => {
   const t = (type || '').toLowerCase();
-  if (t.includes('excavator')) return { label: 'EXCAVATOR', icon: '🚜' };
-  if (t.includes('crane'))     return { label: 'CRANE',     icon: '🏗️' };
-  if (t.includes('bulldozer')) return { label: 'BULLDOZER', icon: '🚜' };
-  if (t.includes('grader'))    return { label: 'GRADER',    icon: '🚜' };
-  if (t.includes('loader'))    return { label: 'LOADER',    icon: '🚜' };
-  if (t.includes('truck'))     return { label: 'DUMP TRUCK',icon: '🚚' };
-  return { label: 'EQUIPMENT', icon: '⚙️' };
+  if (t.includes('excavator')) return { label: 'EXCAVATOR' };
+  if (t.includes('crane'))     return { label: 'CRANE' };
+  if (t.includes('bulldozer')) return { label: 'BULLDOZER' };
+  if (t.includes('grader'))    return { label: 'GRADER' };
+  if (t.includes('loader'))    return { label: 'LOADER' };
+  if (t.includes('truck'))     return { label: 'DUMP TRUCK' };
+  return { label: 'EQUIPMENT' };
 };
 
 const STATUS_COLOR = { active: '#12B76A', idle: '#F79009', overdue: '#D92D20', unassigned: '#71717A' };
 
-const createEquipmentIcon = (equipmentId, type, status, isSelected = false) => {
+// Unified Single Textbox Marker Pinpoint (Equipment + Site Name)
+const createUnifiedEquipmentIcon = (eq, isSelected = false) => {
+  const status = eq.status || 'active';
   const statusColor = STATUS_COLOR[status] || STATUS_COLOR.unassigned;
-  const { icon } = getMachineTypeLabel(type);
+  const eqId = eq.equipmentId || 'EQ';
+  const rawSite = eq.siteId?.name || 'Main Depot';
+  const siteName = rawSite.replace(/Site|\(S\d+\)/gi, '').trim();
+
+  const borderStyle = isSelected ? '2px solid #FFC500' : '1px solid #27272a';
+  const bgStyle = isSelected ? '#000000' : '#18181b';
+
   const html = `
-    <div style="display:inline-flex;align-items:center;gap:4px;
-      background:${isSelected ? '#000' : '#18181b'};color:#fff;padding:2px 6px;
-      border-radius:12px;border:${isSelected ? '2px solid #FFC500' : '1px solid #27272a'};
-      font-family:monospace;font-size:10px;font-weight:700;white-space:nowrap;
-      box-shadow:0 2px 6px rgba(0,0,0,.3);cursor:pointer;
-      transform:${isSelected ? 'scale(1.15)' : 'scale(1)'};transition:all .15s ease;">
-      <span style="width:6px;height:6px;border-radius:50%;background:${statusColor};
-        display:inline-block;box-shadow:0 0 4px ${statusColor};"></span>
-      <span>${icon} ${equipmentId}</span>
-    </div>`;
-  return L.divIcon({ html, className: 'compact-cat-equipment-marker', iconSize: [60, 22], iconAnchor: [30, 11], popupAnchor: [0, -12] });
+    <div style="
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: ${bgStyle};
+      color: #ffffff;
+      padding: 3px 8px;
+      border-radius: 14px;
+      border: ${borderStyle};
+      font-family: monospace, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 3px 8px rgba(0,0,0,0.35);
+      cursor: pointer !important;
+      transform: ${isSelected ? 'scale(1.1)' : 'scale(1)'};
+      transition: all 0.15s ease;
+    ">
+      <span style="
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: ${statusColor};
+        display: inline-block;
+        box-shadow: 0 0 5px ${statusColor};
+      "></span>
+      <span><strong>${eqId}</strong></span>
+      <span style="color: #FFC500; opacity: 0.85; font-size: 10px;">•</span>
+      <span style="color: #e4e4e7; font-weight: 600; font-size: 10px;">${siteName}</span>
+    </div>
+  `;
+
+  return L.divIcon({
+    html,
+    className: 'single-textbox-cat-marker',
+    iconSize: [160, 26],
+    iconAnchor: [80, 13],
+    popupAnchor: [0, -15],
+  });
 };
 
-const createSiteIcon = (siteName) => {
-  const shortName = siteName.replace(/Site|\(S\d+\)/gi, '').trim();
-  const html = `
-    <div style="display:inline-flex;align-items:center;gap:3px;
-      background:rgba(255,197,0,.95);color:#000;padding:2px 6px;border-radius:4px;
-      font-weight:800;font-size:9px;font-family:monospace;
-      box-shadow:0 2px 5px rgba(0,0,0,.2);border:1px solid #000;white-space:nowrap;cursor:pointer;">
-      📍 ${shortName}
-    </div>`;
-  return L.divIcon({ html, className: 'compact-cat-site-marker', iconSize: [70, 20], iconAnchor: [35, 10] });
-};
-
-// ── tooltip HTML ─────────────────────────────────────────────────────────────
+// Detailed Hover Tooltip (Shown on Hover)
 const makeTooltip = (eq) => {
-  const { label, icon } = getMachineTypeLabel(eq.type);
+  const { label } = getMachineTypeLabel(eq.type);
   const statusBadge = eq.status === 'active'
     ? 'background:#ECFDF5;color:#047857;border:1px solid #A7F3D0;'
     : eq.status === 'idle'
     ? 'background:#FFFBEB;color:#B45309;border:1px solid #FDE68A;'
     : 'background:#FEF2F2;color:#B91C1C;border:1px solid #FCA5A5;';
   return `
-    <div style="color:#18181b;font-family:Inter,sans-serif;min-width:220px;padding:4px;">
+    <div style="color:#18181b;font-family:Inter,sans-serif;min-width:230px;padding:6px;">
       <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e4e4e7;padding-bottom:6px;margin-bottom:8px;">
-        <span style="font-size:15px;">${icon} <strong style="font-family:monospace;font-weight:900;">${eq.equipmentId}</strong></span>
+        <span style="font-size:15px;"><strong style="font-family:monospace;font-weight:900;">${eq.equipmentId}</strong></span>
         <span style="font-size:10px;font-family:monospace;text-transform:uppercase;font-weight:800;padding:2px 8px;border-radius:4px;${statusBadge}">${eq.status}</span>
       </div>
       <div style="font-size:12px;line-height:1.6;color:#27272a;">
-        <div><strong>Category:</strong> ${label}</div>
-        <div><strong>Site:</strong> ${eq.siteId?.name || 'Main Depot'}</div>
-        <div><strong>Operator:</strong> <span style="font-family:monospace;font-weight:800;">${eq.lastOperatorId?.name || 'UNASSIGNED'}</span></div>
-        <div><strong>Engine:</strong> <span style="font-family:monospace;font-weight:800;color:#047857;">${eq.engineHoursToday ?? 4} hrs/day</span></div>
-        <div><strong>Idle:</strong> <span style="font-family:monospace;font-weight:800;color:#B45309;">${eq.idleHoursToday ?? 2} hrs/day</span></div>
-        <div><strong>Fuel:</strong> <span style="font-family:monospace;font-weight:800;">${eq.fuelLevel ?? 85}%</span></div>
+        <div><strong>Machine Category:</strong> ${label}</div>
+        <div><strong>Stationed Site:</strong> ${eq.siteId?.name || 'Main Depot'}</div>
+        <div><strong>Operator ID:</strong> <span style="font-family:monospace;font-weight:800;">${eq.lastOperatorId?.name || 'UNASSIGNED'}</span></div>
+        <div><strong>Engine Run:</strong> <span style="font-family:monospace;font-weight:800;color:#047857;">${eq.engineHoursToday ?? 4} hrs/day</span></div>
+        <div><strong>Idle Hours:</strong> <span style="font-family:monospace;font-weight:800;color:#B45309;">${eq.idleHoursToday ?? 2} hrs/day</span></div>
+        <div><strong>Fuel Level:</strong> <span style="font-family:monospace;font-weight:800;">${eq.fuelLevel ?? 85}%</span></div>
       </div>
     </div>`;
 };
@@ -89,7 +113,7 @@ export default function MapView({
 
   const [filterSite, setFilterSite] = useState('all');
 
-  // ── 1. Init map ONCE ──────────────────────────────────────────────────────
+  // 1. Init map ONCE
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     const map = L.map(mapContainerRef.current, { center: [10.7905, 78.7047], zoom: 7 });
@@ -99,27 +123,27 @@ export default function MapView({
     map.on('dragstart', () => { if (mapContainerRef.current) mapContainerRef.current.style.cursor = 'move'; });
     map.on('dragend',   () => { if (mapContainerRef.current) mapContainerRef.current.style.cursor = 'crosshair'; });
     mapRef.current = map;
-  }, []);   // ← empty deps: runs once only
+  }, []);
 
-  // ── 2. Re-render site circles whenever sites prop changes ─────────────────
+  // 2. Render site geofence radius circles ONLY
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     siteLayersRef.current.forEach((l) => map.removeLayer(l));
     siteLayersRef.current = [];
+
     sites.forEach((site) => {
       if (!site.location?.lat) return;
       const r = (site.radiusKm || 15) * 1000;
       const circle = L.circle([site.location.lat, site.location.lng], {
-        radius: r, color: '#FFC500', weight: 2, fillColor: '#FFC500', fillOpacity: 0.08, dashArray: '6 6',
+        radius: r, color: '#FFC500', weight: 2, fillColor: '#FFC500', fillOpacity: 0.06, dashArray: '6 6',
       }).addTo(map);
-      circle.bindTooltip(`<strong>📍 ${site.name}</strong><br/><span style="font-family:monospace;font-size:11px;color:#71717a;">Geofence: ${site.radiusKm || 15} KM · ${site.location.lat.toFixed(4)}, ${site.location.lng.toFixed(4)}</span>`);
-      const sm = L.marker([site.location.lat, site.location.lng], { icon: createSiteIcon(site.name) }).addTo(map);
-      siteLayersRef.current.push(circle, sm);
+      circle.bindTooltip(`<strong>${site.name}</strong><br/><span style="font-family:monospace;font-size:11px;color:#71717a;">Geofence Zone: ${site.radiusKm || 15} KM Radius</span>`);
+      siteLayersRef.current.push(circle);
     });
   }, [sites]);
 
-  // ── 3. Add/update equipment markers when equipments prop changes ──────────
+  // 3. Add/update unified equipment markers when equipments prop changes
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -153,11 +177,12 @@ export default function MapView({
       const isSelected = selectedMachine?.equipmentId === eq.equipmentId;
 
       if (eqMarkersRef.current[eq.equipmentId]) {
-        // Update existing marker — no map re-init
+        // Update existing marker position & icon — no DOM recreation or map shift
         eqMarkersRef.current[eq.equipmentId].setLatLng([lat, lng]);
-        eqMarkersRef.current[eq.equipmentId].setIcon(createEquipmentIcon(eq.equipmentId, eq.type, eq.status, isSelected));
+        eqMarkersRef.current[eq.equipmentId].setIcon(createUnifiedEquipmentIcon(eq, isSelected));
+        eqMarkersRef.current[eq.equipmentId].setTooltipContent(makeTooltip(eq));
       } else {
-        const marker = L.marker([lat, lng], { icon: createEquipmentIcon(eq.equipmentId, eq.type, eq.status, isSelected) }).addTo(map);
+        const marker = L.marker([lat, lng], { icon: createUnifiedEquipmentIcon(eq, isSelected) }).addTo(map);
         marker.bindTooltip(makeTooltip(eq));
         marker.on('click', () => {
           if (onSelectMachine) onSelectMachine(eq);
@@ -182,7 +207,7 @@ export default function MapView({
     }
   }, [equipments, sites, filterSite, selectedDijkstraPath, selectedMachine, assignedSiteIds]);
 
-  // ── 4. Socket: move markers in-place, no map re-init ─────────────────────
+  // 4. Socket: move markers in-place smoothly
   useEffect(() => {
     const onTelemetry = (data) => {
       const marker = eqMarkersRef.current[data.equipmentId];
@@ -192,8 +217,11 @@ export default function MapView({
       const marker = eqMarkersRef.current[data.equipmentId];
       if (marker) {
         const eq = equipments.find((e) => e.equipmentId === data.equipmentId);
-        marker.setIcon(createEquipmentIcon(data.equipmentId, eq?.type || '', data.status,
-          selectedMachine?.equipmentId === data.equipmentId));
+        if (eq) {
+          const updatedEq = { ...eq, status: data.status };
+          marker.setIcon(createUnifiedEquipmentIcon(updatedEq, selectedMachine?.equipmentId === data.equipmentId));
+          marker.setTooltipContent(makeTooltip(updatedEq));
+        }
       }
     };
     socket.on(TELEMETRY_UPDATE, onTelemetry);
@@ -211,7 +239,7 @@ export default function MapView({
           </div>
           <div>
             <h3 className="text-base font-bold text-zinc-900 uppercase tracking-wide">Fleet GIS Positioning & Geofence Map</h3>
-            <p className="text-xs text-zinc-500 font-medium">Geofence Radius Circles (15KM Zone Tracking) & Real-Time Machine Telematics</p>
+            <p className="text-xs text-zinc-500 font-medium">Single Textbox Marker Pinpoints & Hover Telematics</p>
           </div>
         </div>
 
@@ -224,14 +252,20 @@ export default function MapView({
             <option value="all">ALL SITES ({equipments.length} ASSETS)</option>
             <option value="assigned">MY ASSIGNED SITES ONLY</option>
             {sites.map((s) => (
-              <option key={s._id} value={s._id}>📍 {s.name.toUpperCase()}</option>
+              <option key={s._id} value={s._id}>{s.name.toUpperCase()}</option>
             ))}
           </select>
 
           <div className="flex items-center gap-3 bg-zinc-50 px-4 min-h-[48px] rounded-md border border-zinc-200 text-xs font-mono font-bold text-zinc-700">
-            <span className="flex items-center gap-1.5 text-[#12B76A]"><span className="w-2.5 h-2.5 bg-[#12B76A] rounded-sm" /> ACTIVE</span>
-            <span className="flex items-center gap-1.5 text-[#F79009]"><span className="w-2.5 h-2.5 bg-[#F79009] rounded-sm" /> IDLE</span>
-            <span className="flex items-center gap-1.5 text-[#D92D20]"><span className="w-2.5 h-2.5 bg-[#D92D20] rounded-sm" /> OVERDUE</span>
+            <span className="flex items-center gap-1.5 text-[#12B76A]">
+              <span className="w-2.5 h-2.5 bg-[#12B76A] rounded-sm" /> {equipments.filter((e) => e.status === 'active').length} ACTIVE
+            </span>
+            <span className="flex items-center gap-1.5 text-[#F79009]">
+              <span className="w-2.5 h-2.5 bg-[#F79009] rounded-sm" /> {equipments.filter((e) => e.status === 'idle').length} IDLE
+            </span>
+            <span className="flex items-center gap-1.5 text-[#D92D20]">
+              <span className="w-2.5 h-2.5 bg-[#D92D20] rounded-sm" /> {equipments.filter((e) => e.status === 'overdue').length} OVERDUE
+            </span>
           </div>
         </div>
       </div>

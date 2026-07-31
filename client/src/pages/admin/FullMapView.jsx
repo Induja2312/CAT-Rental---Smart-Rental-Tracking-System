@@ -28,7 +28,7 @@ function makeSiteIcon(name) {
     <div style="display:inline-flex;align-items:center;gap:3px;background:rgba(255,197,0,.95);
       color:#000;padding:2px 6px;border-radius:4px;font-weight:800;font-size:9px;
       font-family:monospace;box-shadow:0 2px 5px rgba(0,0,0,.2);border:1px solid #000;white-space:nowrap;">
-      📍 ${short}
+      ${short}
     </div>`;
   return L.divIcon({ html, className: '', iconSize: [80, 20], iconAnchor: [40, 10] });
 }
